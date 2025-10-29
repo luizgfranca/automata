@@ -4,4 +4,6 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
+freedesktop-desktop-entry = "0.7.19"
 gtk4 = "0.10.1"
+rust-ini = "0.21.3"
