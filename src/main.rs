@@ -130,6 +130,8 @@ fn main() -> glib::ExitCode {
                 dbg!(&cmd);
                 try_run(&filtered_cmd_parts);
                 window_ref.close();
+            } else {
+                try_run(&vec![input_str.clone()]);
             }
         });
         let sugg_list_copy = suggestion_list_ui.clone();
@@ -160,6 +162,9 @@ fn main() -> glib::ExitCode {
                     suggestion_list_clone.append(&label);
                 }
             }
+
+            let cmd_entry = gtk::Label::new(Some(&format!("Run command: '{}'", &input_str)));
+            suggestion_list_clone.append(&cmd_entry);
 
             if let Some(first) = suggestion_list_clone.row_at_index(0) {
                 suggestion_list_clone.select_row(Some(&first));
@@ -198,6 +203,8 @@ fn main() -> glib::ExitCode {
                 println!("{}", selected.name(&l).unwrap());
                 dbg!(&cmd);
                 try_run(&filtered_cmd_parts);
+            } else {
+                try_run(&vec![input_str.clone()]);
             }
         });
 
@@ -233,6 +240,8 @@ fn main() -> glib::ExitCode {
                         dbg!(&cmd);
                         try_run(&filtered_cmd_parts);
                         window_ref.close();
+                    } else {
+                        try_run(&vec![input_str.clone()]);
                     }
                     return gtk::glib::Propagation::Stop 
                 }
