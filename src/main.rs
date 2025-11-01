@@ -1,3 +1,7 @@
+mod suggestions;
+mod sysinfo;
+use suggestions::SuggestionMgr;
+
 use std::env::{self, VarError};
 use std::fs::DirEntry;
 use std::ops::Deref;
@@ -67,6 +71,8 @@ fn get_relevant_entries_for_input(
 }
 
 fn main() -> glib::ExitCode {
+    let l = SuggestionMgr::new();
+    dbg!(l);
     let locales = Arc::new(get_languages_from_env());
     let entries = Arc::new(
         Iter::new(default_paths())
