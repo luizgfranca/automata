@@ -2,15 +2,17 @@ use freedesktop_desktop_entry::DesktopEntry;
 
 use crate::sysinfo::SysInfoLoader;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Action {
     Command(Vec<String>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Suggestion {
     pub title: String,
     pub description: String,
+    // TODO: maybe turn this guy into an Option since not all options will have an icon 
+    //      (ex: command)
     pub icon_path: String,
     pub action: Action,
 }
@@ -46,6 +48,36 @@ impl SuggestionMgr {
             .filter(|e| e.exec().is_some())
             .map(|e| Suggestion::from(e, &locales))
             .collect()
+    }
+
+    fn load_dynamic_items(&self, input: &str) -> Vec<Suggestion> {
+        vec![Suggestion {
+            title: format!("Run command: '{}'", input),
+            // TODO: see what should i add here
+            description: String::new(),
+            icon_path: String::new(),
+            // FIXME: there's no way to correctly separate an argument string, event if the user
+            //        uses simple/double quotes or just puts the string with spaces in there
+            action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
+        }]
+    }
+
+    fn filter_relevant_static_items(&self, input: &str) -> Vec<Suggestion> {
+        self.static_items
+            .iter()
+            .filter(|it| {
+                it.title
+                    .to_uppercase()
+                    .contains(input.to_uppercase().as_str())
+            })
+            .map(|it| it.clone())
+            .collect()
+    }
+
+    pub fn get_relevant_items(&self, input: &str) -> Vec<Suggestion> {
+        let mut relevant_items = self.filter_relevant_static_items(input);
+        relevant_items.append(&mut self.load_dynamic_items(input));
+        relevant_items
     }
 }
 
