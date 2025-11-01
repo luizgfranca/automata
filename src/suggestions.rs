@@ -24,6 +24,8 @@ pub struct SuggestionMgr {
     // items that don't depend on user input,
     // they are just loaded and don't change dynamically
     static_items: Vec<Suggestion>,
+
+    relevant_items: Vec<Suggestion>
 }
 
 impl SuggestionMgr {
@@ -31,11 +33,21 @@ impl SuggestionMgr {
         let sysinfo_loader = SysInfoLoader::new();
         let static_items =
             SuggestionMgr::load_static_items(&sysinfo_loader.locales, &sysinfo_loader.entries);
+        let relevant_items = static_items.clone();
 
         Self {
             sysinfo_loader,
             static_items,
+            relevant_items
         }
+    }
+
+    pub fn update(&mut self, input: &str) {
+        self.relevant_items = self.get_relevant_items(input);
+    }
+
+    pub fn get_suggestions(&self) -> &Vec<Suggestion> {
+        &self.relevant_items
     }
 
     fn load_static_items(
@@ -74,7 +86,7 @@ impl SuggestionMgr {
             .collect()
     }
 
-    pub fn get_relevant_items(&self, input: &str) -> Vec<Suggestion> {
+    fn get_relevant_items(&self, input: &str) -> Vec<Suggestion> {
         let mut relevant_items = self.filter_relevant_static_items(input);
         relevant_items.append(&mut self.load_dynamic_items(input));
         relevant_items
