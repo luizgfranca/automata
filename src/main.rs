@@ -1,5 +1,7 @@
 mod suggestions;
 mod sysinfo;
+mod sysaction;
+
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
@@ -26,22 +28,6 @@ fn load_css() {
         &p,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
-}
-
-fn try_run(cmd: &Vec<String>) {
-    if let Some(app) = cmd.get(0) {
-        let mut command = Command::new(app);
-        let args = &cmd[1..];
-        for it in args {
-            command.arg(&it);
-        }
-
-        let output = command.spawn();
-        match output {
-            Err(e) => println!("unable to spawn process {}", e.to_string()),
-            _ => (),
-        }
-    }
 }
 
 fn main() -> glib::ExitCode {
@@ -102,9 +88,7 @@ fn main() -> glib::ExitCode {
                 .get(idx)
                 .expect("suggestion selected index not found on list");
 
-            match &selected.action {
-                suggestions::Action::Command(parts) => try_run(&parts),
-            };
+            selected.run();
             window_clone.close();
         });
 
@@ -148,9 +132,7 @@ fn main() -> glib::ExitCode {
                 .get(idx)
                 .expect("suggestion selected index not found on list");
 
-            match &selected.action {
-                suggestions::Action::Command(parts) => try_run(&parts),
-            };
+            selected.run();
             window_clone.close();
         });
 
@@ -175,9 +157,7 @@ fn main() -> glib::ExitCode {
                         .get(idx)
                         .expect("suggestion selected index not found on list");
 
-                    match &selected.action {
-                        suggestions::Action::Command(parts) => try_run(&parts),
-                    };
+                    selected.run();
                     window_clone.close();
                     return gtk::glib::Propagation::Stop;
                 }

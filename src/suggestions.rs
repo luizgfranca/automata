@@ -1,6 +1,6 @@
 use freedesktop_desktop_entry::DesktopEntry;
 
-use crate::sysinfo::SysInfoLoader;
+use crate::{sysaction, sysinfo::SysInfoLoader};
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -107,6 +107,10 @@ impl Suggestion {
             action: Action::from(&e),
         }
     }
+
+    pub fn run(&self) {
+        self.action.execute();
+    }
 }
 
 impl Action {
@@ -121,5 +125,11 @@ impl Action {
             .map(|it| it.clone())
             .collect();
         Self::Command(cmd_parts)
+    }
+
+    fn execute(&self) {
+        match self {
+            Action::Command(cmd) => sysaction::try_run(cmd),
+        }
     }
 }
