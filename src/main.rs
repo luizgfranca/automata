@@ -131,7 +131,12 @@ fn main() -> glib::ExitCode {
                 try_run(&filtered_cmd_parts);
                 window_ref.close();
             } else {
-                try_run(&vec![input_str.clone()]);
+                let cmd: Vec<String> = input_str
+                    .split(" ")
+                    .map(|s| s.to_string())
+                    .collect();
+                try_run(&cmd);
+                window_ref.close();
             }
         });
         let sugg_list_copy = suggestion_list_ui.clone();
@@ -185,6 +190,7 @@ fn main() -> glib::ExitCode {
         let l = locales.clone();
         let entries_clone = entries.clone();
         let input_clone = main_input.clone();
+        let window_ref = window.clone();
         suggestion_list_ui.connect_row_activated(move |_, row| {
             // can unwrap here because the index should always be valid
             let idx: usize = row.index().try_into().unwrap();
@@ -203,8 +209,14 @@ fn main() -> glib::ExitCode {
                 println!("{}", selected.name(&l).unwrap());
                 dbg!(&cmd);
                 try_run(&filtered_cmd_parts);
+                window_ref.close();
             } else {
-                try_run(&vec![input_str.clone()]);
+                let cmd: Vec<String> = input_str
+                    .split(" ")
+                    .map(|s| s.to_string())
+                    .collect();
+                try_run(&cmd);
+                window_ref.close();
             }
         });
 
@@ -241,7 +253,12 @@ fn main() -> glib::ExitCode {
                         try_run(&filtered_cmd_parts);
                         window_ref.close();
                     } else {
-                        try_run(&vec![input_str.clone()]);
+                        let cmd: Vec<String> = input_str
+                            .split(" ")
+                            .map(|s| s.to_string())
+                            .collect();
+                        try_run(&cmd);
+                        window_ref.close();
                     }
                     return gtk::glib::Propagation::Stop 
                 }
