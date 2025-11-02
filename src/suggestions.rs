@@ -54,10 +54,14 @@ impl SuggestionMgr {
         locales: &Vec<String>,
         desktop_entries: &Vec<DesktopEntry>,
     ) -> Vec<Suggestion> {
+        for entry in desktop_entries {
+            if entry.appid.contains("brave") {
+                dbg!(&entry);
+            }
+        }
         desktop_entries
             .iter()
-            // FIXME: find a more correct way to determine if an entry should or not be shown
-            .filter(|e| e.exec().is_some())
+            .filter(|e| !e.no_display())
             .map(|e| Suggestion::from(e, &locales))
             .collect()
     }
