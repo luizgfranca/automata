@@ -1,6 +1,7 @@
 mod suggestions;
 mod sysinfo;
 mod sysaction;
+mod sessionmgr;
 
 use std::process::Command;
 use std::sync::{Arc, Mutex};

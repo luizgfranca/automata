@@ -3,18 +3,18 @@ use freedesktop_desktop_entry::{default_paths, get_languages_from_env, DesktopEn
 #[derive(Debug)]
 pub struct SysInfoLoader {
     pub locales: Vec<String>,
-    pub entries: Vec<DesktopEntry>,
+    pub desktop_entries: Vec<DesktopEntry>,
 }
 
 impl SysInfoLoader {
     pub fn new() -> Self {
         let locales = get_languages_from_env();
-        let entries = Iter::new(default_paths())
+        let desktop_entries = Iter::new(default_paths())
                 .entries(Some(&locales))
                 .collect::<Vec<_>>();
         Self {
             locales,
-            entries,
+            desktop_entries,
         }
     }
 }

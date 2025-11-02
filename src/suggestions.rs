@@ -1,44 +1,55 @@
+use std::rc::Rc;
+
+use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
 
-use crate::{sysaction, sysinfo::SysInfoLoader};
+use crate::{sessionmgr::{SessionMgr, SessionOperation}, sysaction, sysinfo::SysInfoLoader};
 
 #[derive(Debug, Clone)]
 pub enum Action {
     Command(Vec<String>),
+    Session(SessionOperation, Rc<SessionMgr>)
 }
 
 #[derive(Debug, Clone)]
 pub struct Suggestion {
     pub title: String,
     pub description: String,
-    // TODO: maybe turn this guy into an Option since not all options will have an icon 
+    // TODO: maybe turn this guy into an Option since not all options will have an icon
     //      (ex: command)
     pub icon_path: String,
     pub action: Action,
 }
 
-#[derive(Debug)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct SuggestionMgr {
     sysinfo_loader: SysInfoLoader,
+    session_mgr: Rc<SessionMgr>,
 
     // items that don't depend on user input,
     // they are just loaded and don't change dynamically
     static_items: Vec<Suggestion>,
 
-    relevant_items: Vec<Suggestion>
+    relevant_items: Vec<Suggestion>,
 }
 
 impl SuggestionMgr {
     pub fn new() -> Self {
         let sysinfo_loader = SysInfoLoader::new();
-        let static_items =
-            SuggestionMgr::load_static_items(&sysinfo_loader.locales, &sysinfo_loader.entries);
+        let session_mgr = Rc::new(SessionMgr::new());
+        let static_items = SuggestionMgr::load_static_items(
+            &sysinfo_loader.locales,
+            &sysinfo_loader.desktop_entries,
+            session_mgr.clone(),
+        );
         let relevant_items = static_items.clone();
 
         Self {
             sysinfo_loader,
             static_items,
-            relevant_items
+            relevant_items,
+            session_mgr,
         }
     }
 
@@ -53,17 +64,42 @@ impl SuggestionMgr {
     fn load_static_items(
         locales: &Vec<String>,
         desktop_entries: &Vec<DesktopEntry>,
+        session_mgr: Rc<SessionMgr>,
     ) -> Vec<Suggestion> {
-        for entry in desktop_entries {
-            if entry.appid.contains("brave") {
-                dbg!(&entry);
-            }
-        }
-        desktop_entries
+        let mut items: Vec<Suggestion> = desktop_entries
             .iter()
             .filter(|e| !e.no_display())
             .map(|e| Suggestion::from(e, &locales))
-            .collect()
+            .collect();
+
+        if session_mgr.enable_suspend {
+            items.push(Suggestion{
+                title: "Suspend".to_owned(),
+                description: "Suspend the computer".to_owned(),
+                icon_path: String::new(),
+                action: Action::Session(SessionOperation::Suspend, session_mgr.clone())
+            });
+        }
+
+        if session_mgr.enable_reboot {
+            items.push(Suggestion{
+                title: "Restart".to_owned(),
+                description: "Restart the computer".to_owned(),
+                icon_path: String::new(),
+                action: Action::Session(SessionOperation::Reboot, session_mgr.clone())
+            });
+        }
+
+        if session_mgr.enable_poweroff {
+            items.push(Suggestion{
+                title: "Shutdown".to_owned(),
+                description: "Poweeer off the system".to_owned(),
+                icon_path: String::new(),
+                action: Action::Session(SessionOperation::PoweOff, session_mgr.clone())
+            });
+        }
+
+        items
     }
 
     fn load_dynamic_items(&self, input: &str) -> Vec<Suggestion> {
@@ -134,6 +170,7 @@ impl Action {
     fn execute(&self) {
         match self {
             Action::Command(cmd) => sysaction::try_run(cmd),
-        }
+            Action::Session(op, mgr) => mgr.perform(op)
+        };
     }
 }
