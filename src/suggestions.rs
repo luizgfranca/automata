@@ -1,16 +1,21 @@
-use std::{path::Path, rc::Rc};
+use std::{fs, path::Path, rc::Rc};
 
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
 use xdg_utils::query_default_app;
 
-use crate::{fsutil::is_dir_path, sessionmgr::{SessionMgr, SessionOperation}, sysaction, sysinfo::{DefaultApplicationType, SysInfoLoader}};
+use crate::{
+    fsutil::is_dir_path,
+    sessionmgr::{SessionMgr, SessionOperation},
+    sysaction,
+    sysinfo::{DefaultApplicationType, SysInfoLoader},
+};
 
 #[derive(Debug, Clone)]
 pub enum Action {
     Open(DefaultApplicationType, String),
     Command(Vec<String>),
-    Session(SessionOperation)
+    Session(SessionOperation),
 }
 
 #[derive(Debug, Clone)]
@@ -65,9 +70,9 @@ impl SuggestionMgr {
 
     pub fn run(&self, suggestion: &Suggestion) {
         match &suggestion.action {
-            Action::Open(app_type, target) => sysaction::try_run(
-                &self.sysinfo_loader.get_open_cmd(app_type, &target)
-            ),
+            Action::Open(app_type, target) => {
+                sysaction::try_run(&self.sysinfo_loader.get_open_cmd(app_type, &target))
+            }
             Action::Command(cmd) => sysaction::try_run(&cmd),
             Action::Session(op) => self.session_mgr.perform(&op),
         };
@@ -85,29 +90,29 @@ impl SuggestionMgr {
             .collect();
 
         if session_mgr.enable_suspend {
-            items.push(Suggestion{
+            items.push(Suggestion {
                 title: "Suspend".to_owned(),
                 description: "Suspend the computer".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::Suspend)
+                action: Action::Session(SessionOperation::Suspend),
             });
         }
 
         if session_mgr.enable_reboot {
-            items.push(Suggestion{
+            items.push(Suggestion {
                 title: "Restart".to_owned(),
                 description: "Restart the computer".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::Reboot)
+                action: Action::Session(SessionOperation::Reboot),
             });
         }
 
         if session_mgr.enable_poweroff {
-            items.push(Suggestion{
+            items.push(Suggestion {
                 title: "Shutdown".to_owned(),
                 description: "Poweeer off the system".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::PoweOff)
+                action: Action::Session(SessionOperation::PoweOff),
             });
         }
 
@@ -117,7 +122,27 @@ impl SuggestionMgr {
     fn load_dynamic_items(&self, input: &str) -> Vec<Suggestion> {
         let mut s: Vec<Suggestion> = Vec::new();
 
-        if is_dir_path(input) {
+        let mut folder_suggestions = self.get_folder_suggestions(input);
+        s.append(&mut folder_suggestions);
+
+        s.push(Suggestion {
+            title: format!("Run command: '{}'", input),
+            // TODO: see what should i add here
+            description: String::new(),
+            icon_path: String::new(),
+            // FIXME: there's no way to correctly separate an argument string, event if the user
+            //        uses simple/double quotes or just puts the string with spaces in there
+            action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
+        });
+
+        s
+    }
+
+    fn get_folder_suggestions(&self, input: &str) -> Vec<Suggestion> {
+        let mut s: Vec<Suggestion> = Vec::new();
+        let path = Path::new(input);
+
+        if path.is_dir() {
             s.push(Suggestion {
                 title: format!("Open folder: '{}'", input),
                 // TODO: see what should i add here
@@ -129,15 +154,43 @@ impl SuggestionMgr {
             });
         }
 
-        s.push(Suggestion {
-            title: format!("Run command: '{}'", input),
-            // TODO: see what should i add here
-            description: String::new(),
-            icon_path: String::new(),
-            // FIXME: there's no way to correctly separate an argument string, event if the user
-            //        uses simple/double quotes or just puts the string with spaces in there
-            action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
-        });
+        let maybe_origin = if path.to_string_lossy().ends_with("/") {
+            Some(path)
+        } else {
+            path.parent()
+        };
+
+        if let Some(origin) = maybe_origin {
+            let parent_dir = fs::read_dir(origin)
+                .expect("unexpected: the parent() from a path was assumed to always be valid");
+            for entry in parent_dir {
+                if let Ok(e) = entry {
+                    let path = e.path();
+                    let path_uppercase_str = path
+                            .to_string_lossy()
+                            .to_uppercase();
+                    if path.is_dir()
+                        && path_uppercase_str.contains(&input.to_uppercase())
+                        && !path_uppercase_str.eq(&input.to_uppercase())
+                    {
+                        s.push(Suggestion {
+                            // TODO: investigate what is the risk of using "to_string_lossy" here,
+                            //       and if there's a better approach
+                            title: format!("Open folder: '{}'", path.to_string_lossy()),
+                            // TODO: see what should i add here
+                            description: String::new(),
+                            icon_path: String::new(),
+                            // FIXME: there's no way to correctly separate an argument string, event if the user
+                            //        uses simple/double quotes or just puts the string with spaces in there
+                            action: Action::Open(
+                                DefaultApplicationType::FileExplorer,
+                                path.to_string_lossy().into(),
+                            ),
+                        });
+                    }
+                }
+            }
+        }
 
         s
     }
