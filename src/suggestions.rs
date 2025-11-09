@@ -138,6 +138,8 @@ impl SuggestionMgr {
         s
     }
 
+    // TODO: search for direct strings on folders of the home dir
+    // TODO: tab-complete selected folder suggestion
     fn get_folder_suggestions(&self, input: &str) -> Vec<Suggestion> {
         let mut s: Vec<Suggestion> = Vec::new();
         let home_path = env::var("HOME").expect("expected $HOME to always be defined");
