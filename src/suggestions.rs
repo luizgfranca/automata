@@ -1,14 +1,16 @@
-use std::rc::Rc;
+use std::{path::Path, rc::Rc};
 
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
+use xdg_utils::query_default_app;
 
-use crate::{sessionmgr::{SessionMgr, SessionOperation}, sysaction, sysinfo::SysInfoLoader};
+use crate::{fsutil::is_dir_path, sessionmgr::{SessionMgr, SessionOperation}, sysaction, sysinfo::{DefaultApplicationType, SysInfoLoader}};
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    Open(DefaultApplicationType, String),
     Command(Vec<String>),
-    Session(SessionOperation, Rc<SessionMgr>)
+    Session(SessionOperation)
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +63,16 @@ impl SuggestionMgr {
         &self.relevant_items
     }
 
+    pub fn run(&self, suggestion: &Suggestion) {
+        match &suggestion.action {
+            Action::Open(app_type, target) => sysaction::try_run(
+                &self.sysinfo_loader.get_open_cmd(app_type, &target)
+            ),
+            Action::Command(cmd) => sysaction::try_run(&cmd),
+            Action::Session(op) => self.session_mgr.perform(&op),
+        };
+    }
+
     fn load_static_items(
         locales: &Vec<String>,
         desktop_entries: &Vec<DesktopEntry>,
@@ -77,7 +89,7 @@ impl SuggestionMgr {
                 title: "Suspend".to_owned(),
                 description: "Suspend the computer".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::Suspend, session_mgr.clone())
+                action: Action::Session(SessionOperation::Suspend)
             });
         }
 
@@ -86,7 +98,7 @@ impl SuggestionMgr {
                 title: "Restart".to_owned(),
                 description: "Restart the computer".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::Reboot, session_mgr.clone())
+                action: Action::Session(SessionOperation::Reboot)
             });
         }
 
@@ -95,7 +107,7 @@ impl SuggestionMgr {
                 title: "Shutdown".to_owned(),
                 description: "Poweeer off the system".to_owned(),
                 icon_path: String::new(),
-                action: Action::Session(SessionOperation::PoweOff, session_mgr.clone())
+                action: Action::Session(SessionOperation::PoweOff)
             });
         }
 
@@ -103,7 +115,21 @@ impl SuggestionMgr {
     }
 
     fn load_dynamic_items(&self, input: &str) -> Vec<Suggestion> {
-        vec![Suggestion {
+        let mut s: Vec<Suggestion> = Vec::new();
+
+        if is_dir_path(input) {
+            s.push(Suggestion {
+                title: format!("Open folder: '{}'", input),
+                // TODO: see what should i add here
+                description: String::new(),
+                icon_path: String::new(),
+                // FIXME: there's no way to correctly separate an argument string, event if the user
+                //        uses simple/double quotes or just puts the string with spaces in there
+                action: Action::Open(DefaultApplicationType::FileExplorer, input.to_string()),
+            });
+        }
+
+        s.push(Suggestion {
             title: format!("Run command: '{}'", input),
             // TODO: see what should i add here
             description: String::new(),
@@ -111,7 +137,9 @@ impl SuggestionMgr {
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
-        }]
+        });
+
+        s
     }
 
     fn filter_relevant_static_items(&self, input: &str) -> Vec<Suggestion> {
@@ -147,30 +175,12 @@ impl Suggestion {
             action: Action::from(&e),
         }
     }
-
-    pub fn run(&self) {
-        self.action.execute();
-    }
 }
 
 impl Action {
     // FIXME: we are currently simply ignoring special parameters from the desktop file
     //        we should interpret them and generate valid suggestions corrently based on them
     fn from(e: &DesktopEntry) -> Self {
-        let cmd_parts: Vec<String> = e
-            .parse_exec()
-            .expect("expected DesktopEntry to have a command if it reached suggestion creation")
-            .iter()
-            .filter(|it| (!it.contains('%') && !it.contains('@')))
-            .map(|it| it.clone())
-            .collect();
-        Self::Command(cmd_parts)
-    }
-
-    fn execute(&self) {
-        match self {
-            Action::Command(cmd) => sysaction::try_run(cmd),
-            Action::Session(op, mgr) => mgr.perform(op)
-        };
+        Self::Command(SysInfoLoader::cmd(e))
     }
 }

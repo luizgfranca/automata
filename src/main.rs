@@ -2,6 +2,7 @@ mod suggestions;
 mod sysinfo;
 mod sysaction;
 mod sessionmgr;
+mod fsutil;
 
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -89,7 +90,7 @@ fn main() -> glib::ExitCode {
                 .get(idx)
                 .expect("suggestion selected index not found on list");
 
-            selected.run();
+            mgr.run(&selected);
             window_clone.close();
         });
 
@@ -133,7 +134,7 @@ fn main() -> glib::ExitCode {
                 .get(idx)
                 .expect("suggestion selected index not found on list");
 
-            selected.run();
+            mgr.run(&selected);
             window_clone.close();
         });
 
@@ -158,7 +159,7 @@ fn main() -> glib::ExitCode {
                         .get(idx)
                         .expect("suggestion selected index not found on list");
 
-                    selected.run();
+                    mgr.run(&selected);
                     window_clone.close();
                     return gtk::glib::Propagation::Stop;
                 }

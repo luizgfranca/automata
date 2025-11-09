@@ -163,6 +163,7 @@ dependencies = [
  "gtk4",
  "logind-zbus",
  "rust-ini",
+ "xdg-utils",
  "zbus",
 ]
 
@@ -1571,6 +1572,12 @@ name = "xdg"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fb433233f2df9344722454bc7e96465c9d03bff9d77c248f9e7523fe79585b5"
+
+[[package]]
+name = "xdg-utils"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db9fefe62d5969721e2cfc529e6a760901cc0da422b6d67e7bfd18e69490dba6"
 
 [[package]]
 name = "zbus"
