@@ -1,4 +1,4 @@
-use std::{fs, path::Path, rc::Rc};
+use std::{env, fs, path::Path, rc::Rc};
 
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
@@ -140,8 +140,15 @@ impl SuggestionMgr {
 
     fn get_folder_suggestions(&self, input: &str) -> Vec<Suggestion> {
         let mut s: Vec<Suggestion> = Vec::new();
-        let path = Path::new(input);
+        let home_path = env::var("HOME").expect("expected $HOME to always be defined");
+        let starts_with_home_path_subst = input.chars().nth(0).map_or(false, |c| c == '~');
+        let final_input_path = if starts_with_home_path_subst {
+            input.replace("~", &home_path)
+        } else {
+            input.to_string()
+        };
 
+        let path = Path::new(&final_input_path);
         if path.is_dir() {
             s.push(Suggestion {
                 title: format!("Open folder: '{}'", input),
@@ -150,7 +157,10 @@ impl SuggestionMgr {
                 icon_path: String::new(),
                 // FIXME: there's no way to correctly separate an argument string, event if the user
                 //        uses simple/double quotes or just puts the string with spaces in there
-                action: Action::Open(DefaultApplicationType::FileExplorer, input.to_string()),
+                action: Action::Open(
+                    DefaultApplicationType::FileExplorer,
+                    final_input_path.to_string(),
+                ),
             });
         }
 
@@ -161,32 +171,30 @@ impl SuggestionMgr {
         };
 
         if let Some(origin) = maybe_origin {
-            let parent_dir = fs::read_dir(origin)
-                .expect("unexpected: the parent() from a path was assumed to always be valid");
-            for entry in parent_dir {
-                if let Ok(e) = entry {
-                    let path = e.path();
-                    let path_uppercase_str = path
-                            .to_string_lossy()
-                            .to_uppercase();
-                    if path.is_dir()
-                        && path_uppercase_str.contains(&input.to_uppercase())
-                        && !path_uppercase_str.eq(&input.to_uppercase())
-                    {
-                        s.push(Suggestion {
-                            // TODO: investigate what is the risk of using "to_string_lossy" here,
-                            //       and if there's a better approach
-                            title: format!("Open folder: '{}'", path.to_string_lossy()),
-                            // TODO: see what should i add here
-                            description: String::new(),
-                            icon_path: String::new(),
-                            // FIXME: there's no way to correctly separate an argument string, event if the user
-                            //        uses simple/double quotes or just puts the string with spaces in there
-                            action: Action::Open(
-                                DefaultApplicationType::FileExplorer,
-                                path.to_string_lossy().into(),
-                            ),
-                        });
+            if let Ok(parent_dir) = fs::read_dir(origin) {
+                for entry in parent_dir {
+                    if let Ok(e) = entry {
+                        let path = e.path();
+                        let path_uppercase_str = path.to_string_lossy().to_uppercase();
+                        if path.is_dir()
+                            && path_uppercase_str.contains(&final_input_path.to_uppercase())
+                            && !path_uppercase_str.eq(&final_input_path.to_uppercase())
+                        {
+                            s.push(Suggestion {
+                                // TODO: investigate what is the risk of using "to_string_lossy" here,
+                                //       and if there's a better approach
+                                title: format!("Open folder: '{}'", path.to_string_lossy()),
+                                // TODO: see what should i add here
+                                description: String::new(),
+                                icon_path: String::new(),
+                                // FIXME: there's no way to correctly separate an argument string, event if the user
+                                //        uses simple/double quotes or just puts the string with spaces in there
+                                action: Action::Open(
+                                    DefaultApplicationType::FileExplorer,
+                                    path.to_string_lossy().into(),
+                                ),
+                            });
+                        }
                     }
                 }
             }
