@@ -28,6 +28,15 @@ pub struct Suggestion {
     pub action: Action,
 }
 
+
+fn get_brave_search_url(query: &str) -> String {
+    let mut url = String::new();
+    url.push_str("search.brave.com/search?source=desktop&q=");
+    url.push_str(&query.replace(" ", "+"));
+
+    url
+}
+
 #[derive(Derivative)]
 #[derivative(Debug)]
 pub struct SuggestionMgr {
@@ -124,6 +133,16 @@ impl SuggestionMgr {
 
         let mut folder_suggestions = self.get_folder_suggestions(input);
         s.append(&mut folder_suggestions);
+
+        s.push(Suggestion {
+            title: format!("Search: '{}'", input),
+            // TODO: see what should i add here
+            description: String::new(),
+            icon_path: String::new(),
+            // FIXME: there's no way to correctly separate an argument string, event if the user
+            //        uses simple/double quotes or just puts the string with spaces in there
+            action: Action::Open(DefaultApplicationType::Browser, get_brave_search_url(input)),
+        });
 
         s.push(Suggestion {
             title: format!("Run command: '{}'", input),

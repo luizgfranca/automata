@@ -2,11 +2,14 @@ use freedesktop_desktop_entry::{DesktopEntry, Iter, default_paths, get_languages
 use xdg_utils::query_default_app;
 
 const DIRECTORY_MIMETYPE: &str = "inode/directory";
+const BROWSER_MIMETYPE: &str = "text/html";
 
+const DEFAULT_SEARCH_URL: &str = "";
 
 #[derive(Debug, Clone)]
 pub enum DefaultApplicationType {
     FileExplorer,
+    Browser,
     Mime(String),
 }
 
@@ -34,6 +37,10 @@ impl SysInfoLoader {
                 query_default_app(DIRECTORY_MIMETYPE)
                     .expect("TODO: handle when user does not have a default app to open folders")
             },
+            DefaultApplicationType::Browser => {
+                query_default_app(BROWSER_MIMETYPE)
+                    .expect("TODO: handle when user does not have a default app to open web pages")
+            }
             DefaultApplicationType::Mime(s) => query_default_app(s)
                     .expect("TODO: handle when user does not have a default app to open folders")
         }
