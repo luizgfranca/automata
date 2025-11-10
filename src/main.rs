@@ -43,7 +43,7 @@ fn main() -> glib::ExitCode {
         let window = Arc::new(
             ApplicationWindow::builder()
                 .application(app)
-                .default_width(420)
+                .default_width(1100)
                 .default_height(600)
                 .title("Hello, World!")
                 .decorated(false)
