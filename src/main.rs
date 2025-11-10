@@ -35,6 +35,7 @@ fn load_css() {
 fn main() -> glib::ExitCode {
     let suggestion_mgr = Arc::new(Mutex::new(SuggestionMgr::new()));
 
+    // BUG: only allow one instance
     let app = Application::builder()
         .application_id("com.github.luizgfc.automata")
         .build();

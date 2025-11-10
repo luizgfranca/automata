@@ -134,6 +134,7 @@ impl SuggestionMgr {
         let mut folder_suggestions = self.get_folder_suggestions(input);
         s.append(&mut folder_suggestions);
 
+        // FIXME: find a way to focus the browser when this is done
         s.push(Suggestion {
             title: format!("Search: '{}'", input),
             // TODO: see what should i add here
