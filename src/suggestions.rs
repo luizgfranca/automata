@@ -2,10 +2,8 @@ use std::{env, fs, path::Path, rc::Rc};
 
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
-use xdg_utils::query_default_app;
 
 use crate::{
-    fsutil::is_dir_path,
     sessionmgr::{SessionMgr, SessionOperation},
     sysaction,
     sysinfo::{DefaultApplicationType, SysInfoLoader},
@@ -26,6 +24,8 @@ pub struct Suggestion {
     //      (ex: command)
     pub icon_path: String,
     pub action: Action,
+
+    pub completion: Option<String>
 }
 
 
@@ -104,6 +104,7 @@ impl SuggestionMgr {
                 description: "Suspend the computer".to_owned(),
                 icon_path: String::new(),
                 action: Action::Session(SessionOperation::Suspend),
+                completion: None
             });
         }
 
@@ -113,6 +114,7 @@ impl SuggestionMgr {
                 description: "Restart the computer".to_owned(),
                 icon_path: String::new(),
                 action: Action::Session(SessionOperation::Reboot),
+                completion: None
             });
         }
 
@@ -122,6 +124,7 @@ impl SuggestionMgr {
                 description: "Poweeer off the system".to_owned(),
                 icon_path: String::new(),
                 action: Action::Session(SessionOperation::PoweOff),
+                completion: None
             });
         }
 
@@ -143,6 +146,7 @@ impl SuggestionMgr {
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Open(DefaultApplicationType::Browser, get_brave_search_url(input)),
+            completion: None
         });
 
         s.push(Suggestion {
@@ -153,6 +157,7 @@ impl SuggestionMgr {
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
+            completion: None
         });
 
         s
@@ -183,6 +188,7 @@ impl SuggestionMgr {
                     DefaultApplicationType::FileExplorer,
                     final_input_path.to_string(),
                 ),
+                completion: None
             });
         }
 
@@ -197,7 +203,10 @@ impl SuggestionMgr {
                 for entry in parent_dir {
                     if let Ok(e) = entry {
                         let path = e.path();
-                        let path_uppercase_str = path.to_string_lossy().to_uppercase();
+                        let path_str = path.to_string_lossy();
+                        let path_uppercase_str = path_str.to_uppercase();
+                        let mut completion = path_str.to_string();
+                        completion.push_str("/");
                         if path.is_dir()
                             && path_uppercase_str.contains(&final_input_path.to_uppercase())
                             && !path_uppercase_str.eq(&final_input_path.to_uppercase())
@@ -205,7 +214,7 @@ impl SuggestionMgr {
                             s.push(Suggestion {
                                 // TODO: investigate what is the risk of using "to_string_lossy" here,
                                 //       and if there's a better approach
-                                title: format!("Open folder: '{}'", path.to_string_lossy()),
+                                title: format!("Open folder: '{}'", path_str),
                                 // TODO: see what should i add here
                                 description: String::new(),
                                 icon_path: String::new(),
@@ -215,6 +224,7 @@ impl SuggestionMgr {
                                     DefaultApplicationType::FileExplorer,
                                     path.to_string_lossy().into(),
                                 ),
+                                completion: Some(completion)
                             });
                         }
                     }
@@ -256,6 +266,7 @@ impl Suggestion {
             description: name,        // TODO: find right field to use here
             icon_path: String::new(), // TODO: find right logic for loading the icon
             action: Action::from(&e),
+            completion: None
         }
     }
 }

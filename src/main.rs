@@ -78,6 +78,7 @@ fn main() -> glib::ExitCode {
         let window_clone = window.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
         main_input.connect_activate(move |_| {
+            dbg!("main_input.connect_activate");
             let idx: usize = match suggestion_list_ui_clone.selected_row() {
                 Some(current) => current.index().try_into().unwrap(),
                 None => 0,
@@ -99,6 +100,7 @@ fn main() -> glib::ExitCode {
         let suggestion_list_ui_clone = suggestion_list_ui.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
         main_input.connect_changed(move |input| {
+            dbg!("main_input.connect_changed");
             let input_str: String = input.text().into();
             let mut mgr = suggestion_mgr_clone
                 .lock()
@@ -119,12 +121,12 @@ fn main() -> glib::ExitCode {
             if let Some(first) = suggestion_list_ui_clone.row_at_index(0) {
                 suggestion_list_ui_clone.select_row(Some(&first));
             }
-            // suggestion_list_clone.queue_draw();
         });
 
         let window_clone = window.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
         suggestion_list_ui.connect_row_activated(move |_, row| {
+            dbg!("suggestion_list_ui.connect_row_activated");
             let idx: usize = row.index().try_into().unwrap();
 
             let mgr = suggestion_mgr_clone
@@ -143,9 +145,39 @@ fn main() -> glib::ExitCode {
         let window_clone = window.clone();
         let suggestion_list_ui_clone = suggestion_list_ui.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
+        let main_input_clone = main_input.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
+            dbg!("key_controller.connect_key_pressed");
             match key {
                 Key::Escape => window_clone.close(),
+                Key::Tab => {
+                    let idx: usize = match suggestion_list_ui_clone.selected_row() {
+                        Some(current) => current.index().try_into().unwrap(),
+                        None => 0
+                    };
+
+                    // this is done to avoid a deadlock when on_changed on the main 
+                    // input is triggered because both lock the suggestionMgr
+                    // TODO: i reeeeally should organize my ownership structure to
+                    //       manage this lock better
+                    let selected = {
+                        let mgr = suggestion_mgr_clone
+                            .lock()
+                            .expect("unable to get suggestion list lock");
+
+                        mgr.get_suggestions()
+                            .get(idx)
+                            .expect("suggestion selected index not found on list")
+                            .clone()
+                    };
+                   
+                    if let Some(completion) = &selected.completion {
+                        dbg!(&completion);
+                        main_input_clone.set_text(completion);
+                        main_input_clone.set_position(-1);
+                    }
+                    return gtk::glib::Propagation::Stop;
+                }
                 Key::Return => {
                     let idx: usize = match suggestion_list_ui_clone.selected_row() {
                         Some(current) => current.index().try_into().unwrap(),
