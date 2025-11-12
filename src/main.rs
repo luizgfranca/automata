@@ -35,21 +35,24 @@ fn load_css() {
 fn main() -> glib::ExitCode {
     let suggestion_mgr = Arc::new(Mutex::new(SuggestionMgr::new()));
 
-    // BUG: only allow one instance
     let app = Application::builder()
         .application_id("com.github.luizgfc.automata")
         .build();
 
     app.connect_activate(move |app| {
-        let window = Arc::new(
-            ApplicationWindow::builder()
+        // avoid multiple instances
+        if let Some(window) = app.active_window() {
+            window.present();
+            return;
+        }
+        
+        let window = ApplicationWindow::builder()
                 .application(app)
                 .default_width(1100)
                 .default_height(600)
                 .title("Hello, World!")
                 .decorated(false)
-                .build(),
-        );
+                .build();
 
         load_css();
 
@@ -148,6 +151,7 @@ fn main() -> glib::ExitCode {
         let main_input_clone = main_input.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
             dbg!("key_controller.connect_key_pressed");
+            dbg!(&key);
             match key {
                 Key::Escape => window_clone.close(),
                 Key::Tab => {
