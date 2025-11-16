@@ -3,10 +3,12 @@ mod sysinfo;
 mod sysaction;
 mod sessionmgr;
 mod fsutil;
+mod component;
 
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+use component::suggestion_row::{SuggestionRow, SuggestionRowData};
+use gtk4::gio::{self, AppInfo};
 use suggestions::SuggestionMgr;
 
 use gtk::prelude::*;
@@ -58,6 +60,22 @@ fn main() -> glib::ExitCode {
 
         let main_input = gtk::Entry::new();
         main_input.add_css_class("main-input");
+        
+        let list_store = gio::ListStore::new::<SuggestionRowData>();
+        let factory = gtk::SignalListItemFactory::new();
+        factory.connect_setup(move |_factory, item| {
+            let row = SuggestionRow::default();
+            item.set_child(Some(&row));
+        });
+
+
+        factory.connect_bind(move |_factory, item| {
+            let item = item.downcast_ref::<gtk::ListItem>().unwrap();
+            let data = item.item().and_downcast::<SuggestionRowData>().unwrap();
+            let child = item.child().and_downcast::<SuggestionRow>().unwrap();
+            child.set_data(&data);
+        });
+
         let suggestion_list_ui = gtk::ListBox::new();
         suggestion_list_ui.set_selection_mode(gtk::SelectionMode::Single);
         {
@@ -66,14 +84,56 @@ fn main() -> glib::ExitCode {
                 .expect("unable to lock suggestionMgr")
                 .get_suggestions()
             {
-                let label = gtk::Label::new(Some(&it.title));
-                suggestion_list_ui.append(&label);
+                dbg!(&it);
+                // let label = gtk::Label::new(Some(&it.title));
+                // suggestion_list_ui.append(&label);
+                list_store.append(&SuggestionRowData::new(
+                    &it.id, 
+                    &it.title,
+                    &it.description,
+                    it.icon_path.clone()
+                ));
             }
         }
 
+        let suggestion_mgr_clone = suggestion_mgr.clone();
+        let list_store_clone = list_store.clone();
+        main_input.connect_changed(move |input| {
+            dbg!("main_input.connect_changed");
+            let input_str: String = input.text().into();
+            let mut mgr = suggestion_mgr_clone
+                .lock()
+                .expect("unable to lock suggestion list");
+
+            mgr.update(&input_str);
+            list_store_clone.remove_all();
+            
+            for it in mgr.get_suggestions() {
+                list_store_clone.append(&SuggestionRowData::new(
+                    &it.id, 
+                    &it.title, 
+                    &it.description,
+                    it.icon_path.clone()
+                ));
+            }
+        });
+
+        let selection_model = gtk::SingleSelection::new(Some(list_store));
+        let list_view = gtk::ListView::new(Some(selection_model), Some(factory));
+        let suggestion_mgr_clone = suggestion_mgr.clone();
+        list_view.connect_activate(move |list_view, position| {
+            let model = list_view.model().unwrap();
+            let row_data = model.item(position).and_downcast::<SuggestionRowData>().unwrap();
+            {
+                let mgr = suggestion_mgr_clone.lock().expect("SuggestionMgr poisoned");
+                mgr.run_by_id(&row_data.id());
+            }    
+        });
+
+
         let suggestion_list_scrollable = ScrolledWindow::builder()
             .hscrollbar_policy(gtk::PolicyType::Never)
-            .child(&suggestion_list_ui)
+            .child(&list_view)
             .vexpand(true)
             .build();
 
@@ -100,31 +160,6 @@ fn main() -> glib::ExitCode {
         });
 
 
-        let suggestion_list_ui_clone = suggestion_list_ui.clone();
-        let suggestion_mgr_clone = suggestion_mgr.clone();
-        main_input.connect_changed(move |input| {
-            dbg!("main_input.connect_changed");
-            let input_str: String = input.text().into();
-            let mut mgr = suggestion_mgr_clone
-                .lock()
-                .expect("unable to lock suggestion list");
-
-            mgr.update(&input_str);
-
-            // TODO: find a cleaner way to empty the UI list
-            while let Some(it) = suggestion_list_ui_clone.first_child() {
-                suggestion_list_ui_clone.remove(&it);
-            }
-
-            for it in mgr.get_suggestions() {
-                let label = gtk::Label::new(Some(&it.title));
-                suggestion_list_ui_clone.append(&label);
-            }
-
-            if let Some(first) = suggestion_list_ui_clone.row_at_index(0) {
-                suggestion_list_ui_clone.select_row(Some(&first));
-            }
-        });
 
         let window_clone = window.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();

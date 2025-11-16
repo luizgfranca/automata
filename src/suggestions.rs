@@ -18,11 +18,12 @@ pub enum Action {
 
 #[derive(Debug, Clone)]
 pub struct Suggestion {
+    pub id: String,
     pub title: String,
     pub description: String,
     // TODO: maybe turn this guy into an Option since not all options will have an icon
     //      (ex: command)
-    pub icon_path: String,
+    pub icon_path: Option<String>,
     pub action: Action,
 
     pub completion: Option<String>
@@ -77,6 +78,16 @@ impl SuggestionMgr {
         &self.relevant_items
     }
 
+    pub fn try_get_suggestion_by_id(&self, id: &str) -> Option<&Suggestion> {
+        for it in self.get_suggestions() {
+            if it.id == id {
+                return Some(&it)
+            } 
+        }
+
+        None
+    }
+
     pub fn run(&self, suggestion: &Suggestion) {
         match &suggestion.action {
             Action::Open(app_type, target) => {
@@ -85,6 +96,14 @@ impl SuggestionMgr {
             Action::Command(cmd) => sysaction::try_run(&cmd),
             Action::Session(op) => self.session_mgr.perform(&op),
         };
+    }
+
+    pub fn run_by_id(&self, id: &str) {
+        dbg!("run_by_id {}", id);
+        let s = self.try_get_suggestion_by_id(id)
+            .expect(&format!("Expected referenced suggestionId to always be valid, id = {}", id));
+
+        self.run(s);
     }
 
     fn load_static_items(
@@ -100,9 +119,10 @@ impl SuggestionMgr {
 
         if session_mgr.enable_suspend {
             items.push(Suggestion {
+                id: "system.action.suspend".to_owned(),
                 title: "Suspend".to_owned(),
                 description: "Suspend the computer".to_owned(),
-                icon_path: String::new(),
+                icon_path: None,
                 action: Action::Session(SessionOperation::Suspend),
                 completion: None
             });
@@ -110,9 +130,10 @@ impl SuggestionMgr {
 
         if session_mgr.enable_reboot {
             items.push(Suggestion {
+                id: "system.action.restart".to_owned(),
                 title: "Restart".to_owned(),
                 description: "Restart the computer".to_owned(),
-                icon_path: String::new(),
+                icon_path: None,
                 action: Action::Session(SessionOperation::Reboot),
                 completion: None
             });
@@ -120,9 +141,10 @@ impl SuggestionMgr {
 
         if session_mgr.enable_poweroff {
             items.push(Suggestion {
+                id: "system.action.poweroff".to_owned(),
                 title: "Shutdown".to_owned(),
                 description: "Poweeer off the system".to_owned(),
-                icon_path: String::new(),
+                icon_path: None,
                 action: Action::Session(SessionOperation::PoweOff),
                 completion: None
             });
@@ -139,10 +161,11 @@ impl SuggestionMgr {
 
         // FIXME: find a way to focus the browser when this is done
         s.push(Suggestion {
+            id: "action.search".to_owned(),
             title: format!("Search: '{}'", input),
             // TODO: see what should i add here
             description: String::new(),
-            icon_path: String::new(),
+            icon_path: None,
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Open(DefaultApplicationType::Browser, get_brave_search_url(input)),
@@ -150,10 +173,11 @@ impl SuggestionMgr {
         });
 
         s.push(Suggestion {
+            id: "system.command".to_owned(),
             title: format!("Run command: '{}'", input),
             // TODO: see what should i add here
             description: String::new(),
-            icon_path: String::new(),
+            icon_path: None,
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
@@ -178,10 +202,13 @@ impl SuggestionMgr {
         let path = Path::new(&final_input_path);
         if path.is_dir() {
             s.push(Suggestion {
+                // TODO: this approach is pretty bad
+                //       find a good way to reference actions back from list model
+                id: format!("system.folder.open {}", input),
                 title: format!("Open folder: '{}'", input),
                 // TODO: see what should i add here
                 description: String::new(),
-                icon_path: String::new(),
+                icon_path: None,
                 // FIXME: there's no way to correctly separate an argument string, event if the user
                 //        uses simple/double quotes or just puts the string with spaces in there
                 action: Action::Open(
@@ -212,12 +239,15 @@ impl SuggestionMgr {
                             && !path_uppercase_str.eq(&final_input_path.to_uppercase())
                         {
                             s.push(Suggestion {
+                                // TODO: this approach is pretty bad
+                                //       find a good way to reference actions back from list model
+                                id: format!("system.folder.open {}", path_str),
                                 // TODO: investigate what is the risk of using "to_string_lossy" here,
                                 //       and if there's a better approach
                                 title: format!("Open folder: '{}'", path_str),
                                 // TODO: see what should i add here
                                 description: String::new(),
-                                icon_path: String::new(),
+                                icon_path: None,
                                 // FIXME: there's no way to correctly separate an argument string, event if the user
                                 //        uses simple/double quotes or just puts the string with spaces in there
                                 action: Action::Open(
@@ -262,9 +292,11 @@ impl Suggestion {
             .to_string();
 
         Self {
+            id: e.id().to_string(),
             title: name.clone(),
             description: name,        // TODO: find right field to use here
-            icon_path: String::new(), // TODO: find right logic for loading the icon
+            icon_path: e.icon()
+                .map(|s| s.to_string()), // TODO: find right logic for loading the icon
             action: Action::from(&e),
             completion: None
         }
