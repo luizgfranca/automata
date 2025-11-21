@@ -1,4 +1,6 @@
 mod imp;
+use std::path::Path;
+
 use gtk4::{gio, glib, prelude::*, subclass::prelude::*};
 
 // Made based on GTK-RS github example:
@@ -23,10 +25,12 @@ impl SuggestionRow {
         imp.description.set_text(&data.description());
         if let Some(path) = data.icon() {
             dbg!(&data.icon());
-            imp.image.set_icon_name(Some(&path));
+            if Path::new(&path).exists() {
+                imp.image.set_from_file(Some(&path));
+            } else {
+                imp.image.set_icon_name(Some(&path));
+            }
         }
-        // FIXME: load icon
-        // imp.image.set_from_gicon(&icon);
     }
 }
 

@@ -296,7 +296,7 @@ impl Suggestion {
             title: name.clone(),
             description: name,        // TODO: find right field to use here
             icon_path: e.icon()
-                .map(|s| s.to_string()), // TODO: find right logic for loading the icon
+                .map(|s| s.to_string()),
             action: Action::from(&e),
             completion: None
         }
