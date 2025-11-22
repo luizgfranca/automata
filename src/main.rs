@@ -9,7 +9,7 @@ mod sysinfo;
 use std::sync::{Arc, Mutex};
 
 use component::suggestion_row::{SuggestionRow, SuggestionRowData};
-use gtk4::gio::{self, AppInfo};
+use gtk4::gio::{self};
 use mathutils::*;
 use suggestions::SuggestionMgr;
 
@@ -77,8 +77,6 @@ fn main() -> glib::ExitCode {
             child.set_data(&data);
         });
 
-        let suggestion_list_ui = gtk::ListBox::new();
-        suggestion_list_ui.set_selection_mode(gtk::SelectionMode::Single);
         {
             for it in suggestion_mgr
                 .lock()
@@ -86,8 +84,6 @@ fn main() -> glib::ExitCode {
                 .get_suggestions()
             {
                 dbg!(&it);
-                // let label = gtk::Label::new(Some(&it.title));
-                // suggestion_list_ui.append(&label);
                 list_store.append(&SuggestionRowData::new(
                     &it.id,
                     &it.title,
@@ -140,7 +136,6 @@ fn main() -> glib::ExitCode {
             .vexpand(true)
             .build();
 
-        let suggestion_list_ui_clone = suggestion_list_ui.clone();
         let window_clone = window.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
         let selection_model_clone = selection_model.clone();
@@ -161,28 +156,8 @@ fn main() -> glib::ExitCode {
             window_clone.close();
         });
 
-        let window_clone = window.clone();
-        let suggestion_mgr_clone = suggestion_mgr.clone();
-        suggestion_list_ui.connect_row_activated(move |_, row| {
-            dbg!("suggestion_list_ui.connect_row_activated");
-            let idx: usize = row.index().try_into().unwrap();
-
-            let mgr = suggestion_mgr_clone
-                .lock()
-                .expect("unable to get suggestion list lock");
-
-            let selected = mgr
-                .get_suggestions()
-                .get(idx)
-                .expect("suggestion selected index not found on list");
-
-            mgr.run(&selected);
-            window_clone.close();
-        });
-
         let key_controller = EventControllerKey::new();
         let window_clone = window.clone();
-        let suggestion_list_ui_clone = suggestion_list_ui.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
         let main_input_clone = main_input.clone();
         let selection_model_clone = selection_model.clone();
@@ -192,34 +167,36 @@ fn main() -> glib::ExitCode {
             match key {
                 Key::Escape => window_clone.close(),
                 Key::Tab => {
-                    let idx: usize = match suggestion_list_ui_clone.selected_row() {
-                        Some(current) => current.index().try_into().unwrap(),
-                        None => 0,
-                    };
-
-                    // this is done to avoid a deadlock when on_changed on the main
-                    // input is triggered because both lock the suggestionMgr
-                    // TODO: i reeeeally should organize my ownership structure to
-                    //       manage this lock better
-                    let selected = {
-                        let mgr = suggestion_mgr_clone
-                            .lock()
-                            .expect("unable to get suggestion list lock");
-
-                        mgr.get_suggestions()
-                            .get(idx)
-                            .expect("suggestion selected index not found on list")
-                            .clone()
-                    };
-
-                    if let Some(completion) = &selected.completion {
-                        dbg!(&completion);
-                        main_input_clone.set_text(completion);
-                        main_input_clone.set_position(-1);
-                    }
-                    return gtk::glib::Propagation::Stop;
+                    // BUG: implement tab-completion
+                    // let idx: usize = match suggestion_list_ui_clone.selected_row() {
+                    //     Some(current) => current.index().try_into().unwrap(),
+                    //     None => 0,
+                    // };
+                    //
+                    // // this is done to avoid a deadlock when on_changed on the main
+                    // // input is triggered because both lock the suggestionMgr
+                    // // TODO: i reeeeally should organize my ownership structure to
+                    // //       manage this lock better
+                    // let selected = {
+                    //     let mgr = suggestion_mgr_clone
+                    //         .lock()
+                    //         .expect("unable to get suggestion list lock");
+                    //
+                    //     mgr.get_suggestions()
+                    //         .get(idx)
+                    //         .expect("suggestion selected index not found on list")
+                    //         .clone()
+                    // };
+                    //
+                    // if let Some(completion) = &selected.completion {
+                    //     dbg!(&completion);
+                    //     main_input_clone.set_text(completion);
+                    //     main_input_clone.set_position(-1);
+                    // }
+                    // return gtk::glib::Propagation::Stop;
                 }
-                // Key::Return => {
+                Key::Return => {
+                // BUG: verify necessity and if it is implement this selection logic
                 //     let idx: usize = match suggestion_list_ui_clone.selected_row() {
                 //         Some(current) => current.index().try_into().unwrap(),
                 //         None => 0,
@@ -237,7 +214,7 @@ fn main() -> glib::ExitCode {
                 //     mgr.run(&selected);
                 //     window_clone.close();
                 //     return gtk::glib::Propagation::Stop;
-                // }
+                }
                 Key::Down => {
                     let new_position = u32_increment_wrap(
                         selection_model_clone.selected(),
