@@ -127,7 +127,7 @@ fn main() -> glib::ExitCode {
             let row_data = model
                 .item(position)
                 .and_downcast::<SuggestionRowData>()
-                .unwrap();
+                .expect("selected item should always be able to downcast to the type defined for its row");
             {
                 let mgr = suggestion_mgr_clone.lock().expect("SuggestionMgr poisoned");
                 mgr.run_by_id(&row_data.id());
@@ -143,23 +143,21 @@ fn main() -> glib::ExitCode {
         let suggestion_list_ui_clone = suggestion_list_ui.clone();
         let window_clone = window.clone();
         let suggestion_mgr_clone = suggestion_mgr.clone();
+        let selection_model_clone = selection_model.clone();
         main_input.connect_activate(move |_| {
             dbg!("main_input.connect_activate");
-            let idx: usize = match suggestion_list_ui_clone.selected_row() {
-                Some(current) => current.index().try_into().unwrap(),
-                None => 0,
-            };
+            let selected = selection_model_clone.selected_item(); 
+            if let None = selected {
+                return;
+            }
 
-            let mgr = suggestion_mgr_clone
-                .lock()
-                .expect("unable to get suggestion list lock");
+            let row_data = selected.and_downcast::<SuggestionRowData>()
+                .expect("selected item should always be able to downcast to the type defined for its row");
+            {
+                let mgr = suggestion_mgr_clone.lock().expect("SuggestionMgr poisoned");
+                mgr.run_by_id(&row_data.id());
+            }
 
-            let selected = mgr
-                .get_suggestions()
-                .get(idx)
-                .expect("suggestion selected index not found on list");
-
-            mgr.run(&selected);
             window_clone.close();
         });
 
@@ -221,25 +219,25 @@ fn main() -> glib::ExitCode {
                     }
                     return gtk::glib::Propagation::Stop;
                 }
-                Key::Return => {
-                    let idx: usize = match suggestion_list_ui_clone.selected_row() {
-                        Some(current) => current.index().try_into().unwrap(),
-                        None => 0,
-                    };
-
-                    let mgr = suggestion_mgr_clone
-                        .lock()
-                        .expect("unable to get suggestion list lock");
-
-                    let selected = mgr
-                        .get_suggestions()
-                        .get(idx)
-                        .expect("suggestion selected index not found on list");
-
-                    mgr.run(&selected);
-                    window_clone.close();
-                    return gtk::glib::Propagation::Stop;
-                }
+                // Key::Return => {
+                //     let idx: usize = match suggestion_list_ui_clone.selected_row() {
+                //         Some(current) => current.index().try_into().unwrap(),
+                //         None => 0,
+                //     };
+                //
+                //     let mgr = suggestion_mgr_clone
+                //         .lock()
+                //         .expect("unable to get suggestion list lock");
+                //
+                //     let selected = mgr
+                //         .get_suggestions()
+                //         .get(idx)
+                //         .expect("suggestion selected index not found on list");
+                //
+                //     mgr.run(&selected);
+                //     window_clone.close();
+                //     return gtk::glib::Propagation::Stop;
+                // }
                 Key::Down => {
                     let new_position = u32_increment_wrap(
                         selection_model_clone.selected(),
