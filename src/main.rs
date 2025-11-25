@@ -167,33 +167,29 @@ fn main() -> glib::ExitCode {
             match key {
                 Key::Escape => window_clone.close(),
                 Key::Tab => {
-                    // BUG: implement tab-completion
-                    // let idx: usize = match suggestion_list_ui_clone.selected_row() {
-                    //     Some(current) => current.index().try_into().unwrap(),
-                    //     None => 0,
-                    // };
-                    //
-                    // // this is done to avoid a deadlock when on_changed on the main
-                    // // input is triggered because both lock the suggestionMgr
-                    // // TODO: i reeeeally should organize my ownership structure to
-                    // //       manage this lock better
-                    // let selected = {
-                    //     let mgr = suggestion_mgr_clone
-                    //         .lock()
-                    //         .expect("unable to get suggestion list lock");
-                    //
-                    //     mgr.get_suggestions()
-                    //         .get(idx)
-                    //         .expect("suggestion selected index not found on list")
-                    //         .clone()
-                    // };
-                    //
-                    // if let Some(completion) = &selected.completion {
-                    //     dbg!(&completion);
-                    //     main_input_clone.set_text(completion);
-                    //     main_input_clone.set_position(-1);
-                    // }
-                    // return gtk::glib::Propagation::Stop;
+                    let selected = selection_model_clone.selected_item();
+
+                    let row_data = selected.and_downcast::<SuggestionRowData>()
+                        .expect("selected item should always be able to downcast to the type defined for its row");
+
+                    // need to do this in this way to free the lock before changing the input,
+                    // which would change the suggestions and create a deadlock
+                    // TODO: restructure this
+                    let suggestion = {
+                        let mgr = suggestion_mgr_clone.lock().expect("SuggestionMgr poisoned");
+                        mgr.try_get_suggestion_by_id(&row_data.id())
+                            .expect(
+                                &format!("item with ID {} when on the list_view should alwyas be present on SuggestionManager", row_data.id()
+                                )
+                            )
+                            .clone()
+                    };
+                    if let Some(completion) = &suggestion.completion {
+                        dbg!(&completion);
+                        main_input_clone.set_text(completion);
+                        main_input_clone.set_position(-1);
+                    }
+                    return gtk::glib::Propagation::Stop;
                 }
                 Key::Down => {
                     let new_position = u32_increment_wrap(
