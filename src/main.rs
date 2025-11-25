@@ -52,7 +52,7 @@ fn main() -> glib::ExitCode {
 
         let window = ApplicationWindow::builder()
             .application(app)
-            .default_width(1100)
+            .default_width(1000)
             .default_height(600)
             .title("Hello, World!")
             .decorated(false)
