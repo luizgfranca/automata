@@ -291,10 +291,15 @@ impl Suggestion {
             .expect("desktop entry name expected to be always present")
             .to_string();
 
+        let description = match e.comment(locales) {
+            Some(comment) => comment.to_string(),
+            None => name.clone(),
+        };
+
         Self {
             id: e.id().to_string(),
             title: name.clone(),
-            description: name,        // TODO: find right field to use here
+            description,
             icon_path: e.icon()
                 .map(|s| s.to_string()),
             action: Action::from(&e),
