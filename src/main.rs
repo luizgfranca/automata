@@ -54,7 +54,7 @@ fn main() -> glib::ExitCode {
             .application(app)
             .default_width(1000)
             .default_height(600)
-            .title("Hello, World!")
+            .title("Automata")
             .decorated(false)
             .build();
 
