@@ -195,26 +195,6 @@ fn main() -> glib::ExitCode {
                     // }
                     // return gtk::glib::Propagation::Stop;
                 }
-                Key::Return => {
-                // BUG: verify necessity and if it is implement this selection logic
-                //     let idx: usize = match suggestion_list_ui_clone.selected_row() {
-                //         Some(current) => current.index().try_into().unwrap(),
-                //         None => 0,
-                //     };
-                //
-                //     let mgr = suggestion_mgr_clone
-                //         .lock()
-                //         .expect("unable to get suggestion list lock");
-                //
-                //     let selected = mgr
-                //         .get_suggestions()
-                //         .get(idx)
-                //         .expect("suggestion selected index not found on list");
-                //
-                //     mgr.run(&selected);
-                //     window_clone.close();
-                //     return gtk::glib::Propagation::Stop;
-                }
                 Key::Down => {
                     let new_position = u32_increment_wrap(
                         selection_model_clone.selected(),
