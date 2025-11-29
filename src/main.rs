@@ -161,6 +161,8 @@ fn main() -> glib::ExitCode {
         let suggestion_mgr_clone = suggestion_mgr.clone();
         let main_input_clone = main_input.clone();
         let selection_model_clone = selection_model.clone();
+        let list_view_clone = list_view.clone();
+        let suggestion_list_scrollable_clone = suggestion_list_scrollable.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
             dbg!("key_controller.connect_key_pressed");
             dbg!(&key);
@@ -199,6 +201,12 @@ fn main() -> glib::ExitCode {
                     );
                     dbg!((selection_model_clone.selected(), &new_position));
                     selection_model_clone.set_selected(new_position);
+                    list_view.activate_action(
+                        "list.scroll-to-item", 
+                        Some(&new_position.to_variant())
+                    ).expect(
+                        &format!("expected to always be able to scroll to new selected item: {}", new_position) 
+                    );
                     return gtk::glib::Propagation::Stop;
                 }
                 Key::Up => {
@@ -209,6 +217,12 @@ fn main() -> glib::ExitCode {
                     );
                     dbg!((selection_model_clone.selected(), &new_position));
                     selection_model_clone.set_selected(new_position);
+                    list_view.activate_action(
+                        "list.scroll-to-item", 
+                        Some(&new_position.to_variant())
+                    ).expect(
+                        &format!("expected to always be able to scroll to new selected item: {}", new_position) 
+                    );
                     return gtk::glib::Propagation::Stop;
                 }
                 _ => (),
