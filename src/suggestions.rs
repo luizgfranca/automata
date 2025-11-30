@@ -26,9 +26,8 @@ pub struct Suggestion {
     pub icon_path: Option<String>,
     pub action: Action,
 
-    pub completion: Option<String>
+    pub completion: Option<String>,
 }
-
 
 fn get_brave_search_url(query: &str) -> String {
     let mut url = String::new();
@@ -81,8 +80,8 @@ impl SuggestionMgr {
     pub fn try_get_suggestion_by_id(&self, id: &str) -> Option<&Suggestion> {
         for it in self.get_suggestions() {
             if it.id == id {
-                return Some(&it)
-            } 
+                return Some(&it);
+            }
         }
 
         None
@@ -100,8 +99,10 @@ impl SuggestionMgr {
 
     pub fn run_by_id(&self, id: &str) {
         dbg!("run_by_id {}", id);
-        let s = self.try_get_suggestion_by_id(id)
-            .expect(&format!("Expected referenced suggestionId to always be valid, id = {}", id));
+        let s = self.try_get_suggestion_by_id(id).expect(&format!(
+            "Expected referenced suggestionId to always be valid, id = {}",
+            id
+        ));
 
         self.run(s);
     }
@@ -124,7 +125,7 @@ impl SuggestionMgr {
                 description: "Suspend the computer".to_owned(),
                 icon_path: None,
                 action: Action::Session(SessionOperation::Suspend),
-                completion: None
+                completion: None,
             });
         }
 
@@ -135,7 +136,7 @@ impl SuggestionMgr {
                 description: "Restart the computer".to_owned(),
                 icon_path: None,
                 action: Action::Session(SessionOperation::Reboot),
-                completion: None
+                completion: None,
             });
         }
 
@@ -146,7 +147,7 @@ impl SuggestionMgr {
                 description: "Poweeer off the system".to_owned(),
                 icon_path: None,
                 action: Action::Session(SessionOperation::PoweOff),
-                completion: None
+                completion: None,
             });
         }
 
@@ -159,6 +160,9 @@ impl SuggestionMgr {
         let mut folder_suggestions = self.get_folder_suggestions(input);
         s.append(&mut folder_suggestions);
 
+        let mut math_suggestions = self.get_math_suggestions(input);
+        s.append(&mut math_suggestions);
+
         // FIXME: find a way to focus the browser when this is done
         s.push(Suggestion {
             id: "action.search".to_owned(),
@@ -169,7 +173,7 @@ impl SuggestionMgr {
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Open(DefaultApplicationType::Browser, get_brave_search_url(input)),
-            completion: None
+            completion: None,
         });
 
         s.push(Suggestion {
@@ -181,10 +185,26 @@ impl SuggestionMgr {
             // FIXME: there's no way to correctly separate an argument string, event if the user
             //        uses simple/double quotes or just puts the string with spaces in there
             action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
-            completion: None
+            completion: None,
         });
 
         s
+    }
+
+    // FIXME: adding math resolution as a normal suggestion listItem foor now
+    //        there should be a better UI for it
+    fn get_math_suggestions(&self, input: &str) -> Vec<Suggestion> {
+        match evalexpr::eval(input) {
+            Ok(result) => vec![Suggestion {
+                id: "evaluation".to_owned(),
+                title: format!("Result: '{}'", result),
+                description: String::new(),
+                icon_path: None,
+                action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
+                completion: None,
+            }],
+            Err(_) => vec![],
+        }
     }
 
     // TODO: search for direct strings on folders of the home dir
@@ -215,7 +235,7 @@ impl SuggestionMgr {
                     DefaultApplicationType::FileExplorer,
                     final_input_path.to_string(),
                 ),
-                completion: None
+                completion: None,
             });
         }
 
@@ -254,7 +274,7 @@ impl SuggestionMgr {
                                     DefaultApplicationType::FileExplorer,
                                     path.to_string_lossy().into(),
                                 ),
-                                completion: Some(completion)
+                                completion: Some(completion),
                             });
                         }
                     }
@@ -300,10 +320,9 @@ impl Suggestion {
             id: e.id().to_string(),
             title: name.clone(),
             description,
-            icon_path: e.icon()
-                .map(|s| s.to_string()),
+            icon_path: e.icon().map(|s| s.to_string()),
             action: Action::from(&e),
-            completion: None
+            completion: None,
         }
     }
 }

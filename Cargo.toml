@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 derivative = "2.2.0"
+evalexpr = "13.1.0"
 freedesktop-desktop-entry = "0.7.19"
 gtk4 = "0.10.1"
 logind-zbus = "5.3.2"
