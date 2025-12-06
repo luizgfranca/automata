@@ -2,6 +2,8 @@ use std::{env, fs, path::Path, rc::Rc};
 
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
+use gtk4::gdk::{self, prelude::DisplayExt};
+use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
 use crate::{
     sessionmgr::{SessionMgr, SessionOperation},
@@ -15,6 +17,7 @@ pub enum Action {
     Open(DefaultApplicationType, String),
     Command(Vec<String>),
     Session(SessionOperation),
+    CopyToClipboard(String)
 }
 
 #[derive(Debug, Clone)]
@@ -30,6 +33,11 @@ pub struct Suggestion {
     pub completion: Option<String>,
 }
 
+pub enum PostRunAction {
+    Nothing,
+    Close
+}
+
 fn get_brave_search_url(query: &str) -> String {
     let mut url = String::new();
     url.push_str("search.brave.com/search?source=desktop&q=");
@@ -37,6 +45,21 @@ fn get_brave_search_url(query: &str) -> String {
 
     url
 }
+
+fn set_clipboard(value: &str) {
+    dbg!("setting cilpboard");
+    dbg!(value);
+
+    let opts = Options::new();
+    let result = opts.copy(
+        Source::Bytes(value.to_string().into_bytes().into()), 
+        MimeType::Autodetect
+    );
+
+    if let Err(e) = result {
+        println!("unable to copy to clipboard {}", e);
+    }
+} 
 
 #[derive(Derivative)]
 #[derivative(Debug)]
@@ -88,7 +111,7 @@ impl SuggestionMgr {
         None
     }
 
-    pub fn run(&self, suggestion: &Suggestion) {
+    pub fn run(&self, suggestion: &Suggestion) -> PostRunAction {
         match &suggestion.action {
             Action::NoOp => (),
             Action::Open(app_type, target) => {
@@ -96,17 +119,20 @@ impl SuggestionMgr {
             }
             Action::Command(cmd) => sysaction::try_run(&cmd),
             Action::Session(op) => self.session_mgr.perform(&op),
+            Action::CopyToClipboard(str) => set_clipboard(&str)
         };
+
+        PostRunAction::Close
     }
 
-    pub fn run_by_id(&self, id: &str) {
+    pub fn run_by_id(&self, id: &str) -> PostRunAction {
         dbg!("run_by_id {}", id);
         let s = self.try_get_suggestion_by_id(id).expect(&format!(
             "Expected referenced suggestionId to always be valid, id = {}",
             id
         ));
 
-        self.run(s);
+        self.run(s)
     }
 
     fn load_static_items(
@@ -202,7 +228,7 @@ impl SuggestionMgr {
                 title: format!("Result: '{}'", result),
                 description: String::new(),
                 icon_path: None,
-                action: Action::NoOp,
+                action: Action::CopyToClipboard(result.to_string()),
                 completion: None,
             }],
             Err(_) => vec![],

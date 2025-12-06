@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 use component::suggestion_row::{SuggestionRow, SuggestionRowData};
 use gtk4::gio::{self};
 use mathutils::*;
-use suggestions::SuggestionMgr;
+use suggestions::{PostRunAction, SuggestionMgr};
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, glib};
@@ -150,10 +150,12 @@ fn main() -> glib::ExitCode {
                 .expect("selected item should always be able to downcast to the type defined for its row");
             {
                 let mgr = suggestion_mgr_clone.lock().expect("SuggestionMgr poisoned");
-                mgr.run_by_id(&row_data.id());
-            }
+                let post_run_action = mgr.run_by_id(&row_data.id());
 
-            window_clone.close();
+                if let PostRunAction::Close = post_run_action {
+                    window_clone.close();
+                }
+            }
         });
 
         let key_controller = EventControllerKey::new();
