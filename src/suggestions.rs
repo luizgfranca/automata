@@ -11,6 +11,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum Action {
+    NoOp,
     Open(DefaultApplicationType, String),
     Command(Vec<String>),
     Session(SessionOperation),
@@ -89,6 +90,7 @@ impl SuggestionMgr {
 
     pub fn run(&self, suggestion: &Suggestion) {
         match &suggestion.action {
+            Action::NoOp => (),
             Action::Open(app_type, target) => {
                 sysaction::try_run(&self.sysinfo_loader.get_open_cmd(app_type, &target))
             }
@@ -200,7 +202,7 @@ impl SuggestionMgr {
                 title: format!("Result: '{}'", result),
                 description: String::new(),
                 icon_path: None,
-                action: Action::Command(input.split(" ").map(|s| s.to_string()).collect()),
+                action: Action::NoOp,
                 completion: None,
             }],
             Err(_) => vec![],
