@@ -1,8 +1,12 @@
 use std::{env, fs, path::Path, rc::Rc};
 
+use base64::prelude::*;
 use derivative::Derivative;
 use freedesktop_desktop_entry::DesktopEntry;
-use gtk4::gdk::{self, prelude::DisplayExt};
+use gtk4::{
+    gdk::{self, prelude::DisplayExt},
+    glib::base64_decode,
+};
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
 use crate::{
@@ -17,7 +21,7 @@ pub enum Action {
     Open(DefaultApplicationType, String),
     Command(Vec<String>),
     Session(SessionOperation),
-    CopyToClipboard(String)
+    CopyToClipboard(String),
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +39,7 @@ pub struct Suggestion {
 
 pub enum PostRunAction {
     Nothing,
-    Close
+    Close,
 }
 
 fn get_brave_search_url(query: &str) -> String {
@@ -52,14 +56,14 @@ fn set_clipboard(value: &str) {
 
     let opts = Options::new();
     let result = opts.copy(
-        Source::Bytes(value.to_string().into_bytes().into()), 
-        MimeType::Autodetect
+        Source::Bytes(value.to_string().into_bytes().into()),
+        MimeType::Autodetect,
     );
 
     if let Err(e) = result {
         println!("unable to copy to clipboard {}", e);
     }
-} 
+}
 
 #[derive(Derivative)]
 #[derivative(Debug)]
@@ -119,7 +123,7 @@ impl SuggestionMgr {
             }
             Action::Command(cmd) => sysaction::try_run(&cmd),
             Action::Session(op) => self.session_mgr.perform(&op),
-            Action::CopyToClipboard(str) => set_clipboard(&str)
+            Action::CopyToClipboard(str) => set_clipboard(&str),
         };
 
         PostRunAction::Close
@@ -191,6 +195,9 @@ impl SuggestionMgr {
         let mut math_suggestions = self.get_math_suggestions(input);
         s.append(&mut math_suggestions);
 
+        let mut b64_suggestions = self.get_b64_conversion_suggestions(input);
+        s.append(&mut b64_suggestions);
+        
         // FIXME: find a way to focus the browser when this is done
         s.push(Suggestion {
             id: "action.search".to_owned(),
@@ -224,13 +231,35 @@ impl SuggestionMgr {
     fn get_math_suggestions(&self, input: &str) -> Vec<Suggestion> {
         match evalexpr::eval(input) {
             Ok(result) => vec![Suggestion {
-                id: "evaluation".to_owned(),
+                id: "evaluation.calc".to_owned(),
                 title: format!("Result: '{}'", result),
                 description: String::new(),
                 icon_path: None,
                 action: Action::CopyToClipboard(result.to_string()),
                 completion: None,
             }],
+            Err(_) => vec![],
+        }
+    }
+
+    // FIXME: adding math resolution as a normal suggestion listItem foor now
+    //        there should be a better UI for it
+    fn get_b64_conversion_suggestions(&self, input: &str) -> Vec<Suggestion> {
+        match BASE64_STANDARD.decode(input) {
+            Ok(result) => {
+                match String::from_utf8(result) {
+                    Ok(str) => 
+                        vec![Suggestion {
+                            id: "evaluation.b64".to_owned(),
+                            title: format!("Base64 converted text: '{}'", str),
+                            description: String::new(),
+                            icon_path: None,
+                            action: Action::CopyToClipboard(str),
+                            completion: None,
+                        }],
+                    Err(_) => vec![],
+                }
+            }
             Err(_) => vec![],
         }
     }
