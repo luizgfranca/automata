@@ -10,10 +10,12 @@ use gtk4::{
 use wl_clipboard_rs::copy::{MimeType, Options, Source};
 
 use crate::{
+    conversionutil,
     sessionmgr::{SessionMgr, SessionOperation},
     sysaction,
     sysinfo::{DefaultApplicationType, SysInfoLoader},
 };
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -197,7 +199,10 @@ impl SuggestionMgr {
 
         let mut b64_suggestions = self.get_b64_conversion_suggestions(input);
         s.append(&mut b64_suggestions);
-        
+
+        let mut unit_conversin_suggestions = self.get_unit_conversion_suggestions(input);
+        s.append(&mut unit_conversin_suggestions);
+
         // FIXME: find a way to focus the browser when this is done
         s.push(Suggestion {
             id: "action.search".to_owned(),
@@ -246,21 +251,59 @@ impl SuggestionMgr {
     //        there should be a better UI for it
     fn get_b64_conversion_suggestions(&self, input: &str) -> Vec<Suggestion> {
         match BASE64_STANDARD.decode(input) {
-            Ok(result) => {
-                match String::from_utf8(result) {
-                    Ok(str) => 
-                        vec![Suggestion {
-                            id: "evaluation.b64".to_owned(),
-                            title: format!("Base64 converted text: '{}'", str),
-                            description: String::new(),
-                            icon_path: None,
-                            action: Action::CopyToClipboard(str),
-                            completion: None,
-                        }],
+            Ok(result) => match String::from_utf8(result) {
+                Ok(str) => vec![Suggestion {
+                    id: "evaluation.b64".to_owned(),
+                    title: format!("Base64 converted text: '{}'", str),
+                    description: String::new(),
+                    icon_path: None,
+                    action: Action::CopyToClipboard(str),
+                    completion: None,
+                }],
+                Err(_) => vec![],
+            },
+            Err(_) => vec![],
+        }
+    }
+
+    fn get_unit_conversion_suggestions(&self, input: &str) -> Vec<Suggestion> {
+        let parts: Vec<&str> = input.split("to").collect();
+        if parts.len() < 2 {
+            return vec![];
+        }
+
+        let from_arm = parts[0];
+        let to_arm = parts[1];
+
+        let amount_regex = Regex::new(r"-?\d+\.?\d*(?:[eE][+-]?\d+)?").unwrap();
+        let unit_regex = Regex::new(r"[a-zA-Z]+").unwrap();
+
+        let amount_result = amount_regex.find(from_arm);
+        let unit_result = unit_regex.find(from_arm);
+
+        match (amount_result, unit_result) {
+            (Some(amount_content), Some(unit_content)) => {
+                let amount: f64 = amount_content.as_str().parse().unwrap();
+
+                match conversionutil::convert(amount, unit_content.as_str(), to_arm.trim()) {
+                    Ok(result) => vec![Suggestion {
+                        id: "evaluation.unit-conversion".to_owned(),
+                        title: format!(
+                            "{}{} = {}{}",
+                            amount,
+                            unit_content.as_str(),
+                            result,
+                            to_arm.trim()
+                        ),
+                        description: String::new(),
+                        icon_path: None,
+                        action: Action::NoOp,
+                        completion: None,
+                    }],
                     Err(_) => vec![],
                 }
             }
-            Err(_) => vec![],
+            (_, _) => vec![],
         }
     }
 

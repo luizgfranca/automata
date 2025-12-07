@@ -1,5 +1,6 @@
 mod component;
 mod fsutil;
+mod conversionutil;
 mod mathutils;
 mod sessionmgr;
 mod suggestions;
