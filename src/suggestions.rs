@@ -289,7 +289,7 @@ impl SuggestionMgr {
                     Ok(result) => vec![Suggestion {
                         id: "evaluation.unit-conversion".to_owned(),
                         title: format!(
-                            "{}{} = {}{}",
+                            "{} {} = {} {}",
                             amount,
                             unit_content.as_str(),
                             result,
