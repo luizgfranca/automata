@@ -60,7 +60,10 @@ impl SysInfoLoader {
     }
     pub fn cmd(e: &DesktopEntry) -> Vec<String> {
         e.parse_exec()
-            .expect("expected DesktopEntry to have a command if it reached suggestion creation")
+            // BUG: workaround for malformed entries, currently will generate entries that do
+            // nothing, which is not good. Refactor this to handle it better (possibly ignore whole
+            // entry from suggestion list when this is wrong)
+            .unwrap_or(vec![]) 
             .iter()
             .filter(|it| (!it.contains('%') && !it.contains('@')))
             .map(|it| it.clone())
