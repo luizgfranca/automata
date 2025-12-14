@@ -1,5 +1,5 @@
 use freedesktop_desktop_entry::{DesktopEntry, Iter, default_paths, get_languages_from_env};
-use xdg_utils::query_default_app;
+use xdg_utils::{query_default_app, query_mime_info};
 
 const DIRECTORY_MIMETYPE: &str = "inode/directory";
 const BROWSER_MIMETYPE: &str = "text/html";
@@ -19,6 +19,10 @@ pub struct SysInfoLoader {
     pub desktop_entries: Vec<DesktopEntry>,
 }
 
+pub enum FileOpenError {
+    DefaultAppNotFound,
+}
+
 impl SysInfoLoader {
     pub fn new() -> Self {
         let locales = get_languages_from_env();
@@ -33,16 +37,12 @@ impl SysInfoLoader {
 
     pub fn get_default_app_cmd(&self, app_type: &DefaultApplicationType) -> String {
         match app_type {
-            DefaultApplicationType::FileExplorer => {
-                query_default_app(DIRECTORY_MIMETYPE)
-                    .expect("TODO: handle when user does not have a default app to open folders")
-            },
-            DefaultApplicationType::Browser => {
-                query_default_app(BROWSER_MIMETYPE)
-                    .expect("TODO: handle when user does not have a default app to open web pages")
-            }
+            DefaultApplicationType::FileExplorer => query_default_app(DIRECTORY_MIMETYPE)
+                .expect("TODO: handle when user does not have a default app to open folders"),
+            DefaultApplicationType::Browser => query_default_app(BROWSER_MIMETYPE)
+                .expect("TODO: handle when user does not have a default app to open web pages"),
             DefaultApplicationType::Mime(s) => query_default_app(s)
-                    .expect("TODO: handle when user does not have a default app to open folders")
+                .expect("TODO: handle when user does not have a default app to open folders"),
         }
     }
 
@@ -50,6 +50,15 @@ impl SysInfoLoader {
         let mut app_cmd = SysInfoLoader::cmd_str(&self.get_default_app_cmd(app_type));
         app_cmd.push(path.to_string());
         app_cmd
+    }
+
+    pub fn try_get_file_mime_type_str(path: &str) -> Option<DefaultApplicationType> {
+        match query_mime_info(path) {
+            Ok(mime) => Some(DefaultApplicationType::Mime(
+                String::from_utf8(mime).expect("expected mimetype identifier string to be UTF-8"),
+            )),
+            Err(_) => None,
+        }
     }
 
     pub fn cmd_str(s: &str) -> Vec<String> {
@@ -63,11 +72,11 @@ impl SysInfoLoader {
             // BUG: workaround for malformed entries, currently will generate entries that do
             // nothing, which is not good. Refactor this to handle it better (possibly ignore whole
             // entry from suggestion list when this is wrong)
-            .unwrap_or(vec![]) 
+            .unwrap_or(vec![])
             .iter()
             .filter(|it| (!it.contains('%') && !it.contains('@')))
             .map(|it| it.clone())
-           .collect()
+            .collect()
     }
 
     fn get_mimetype_default_app(&self, mime: &str) -> &DesktopEntry {

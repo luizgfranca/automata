@@ -337,6 +337,25 @@ impl SuggestionMgr {
                 ),
                 completion: None,
             });
+        } else if path.is_file() {
+            if let Some(app_type) = SysInfoLoader::try_get_file_mime_type_str(&final_input_path) {
+                s.push(Suggestion {
+                    // TODO: this approach is pretty ba
+                    //       find a good way to reference actions back from list model
+                    id: format!("system.file.open {}", input),
+                    title: format!("Open File: '{}'", input),
+                    // TODO: see what should i add here
+                    description: String::new(),
+                    icon_path: None,
+                    // FIXME: there's no way to correctly separate an argument string, event if the user
+                    //        uses simple/double quotes or just puts the string with spaces in there
+                    action: Action::Open(
+                        app_type,
+                        final_input_path.to_string(),
+                    ),
+                    completion: None,
+                });
+            }
         }
 
         let maybe_origin = if path.to_string_lossy().ends_with("/") {
@@ -354,28 +373,51 @@ impl SuggestionMgr {
                         let path_uppercase_str = path_str.to_uppercase();
                         let mut completion = path_str.to_string();
                         completion.push_str("/");
-                        if path.is_dir()
-                            && path_uppercase_str.contains(&final_input_path.to_uppercase())
+                        if path_uppercase_str.contains(&final_input_path.to_uppercase())
                             && !path_uppercase_str.eq(&final_input_path.to_uppercase())
                         {
-                            s.push(Suggestion {
-                                // TODO: this approach is pretty bad
-                                //       find a good way to reference actions back from list model
-                                id: format!("system.folder.open {}", path_str),
-                                // TODO: investigate what is the risk of using "to_string_lossy" here,
-                                //       and if there's a better approach
-                                title: format!("Open folder: '{}'", path_str),
-                                // TODO: see what should i add here
-                                description: String::new(),
-                                icon_path: None,
-                                // FIXME: there's no way to correctly separate an argument string, event if the user
-                                //        uses simple/double quotes or just puts the string with spaces in there
-                                action: Action::Open(
-                                    DefaultApplicationType::FileExplorer,
-                                    path.to_string_lossy().into(),
-                                ),
-                                completion: Some(completion),
-                            });
+                            if path.is_dir() {
+                                s.push(Suggestion {
+                                    // TODO: this approach is pretty bad
+                                    //       find a good way to reference actions back from list model
+                                    id: format!("system.folder.open {}", path_str),
+                                    // TODO: investigate what is the risk of using "to_string_lossy" here,
+                                    //       and if there's a better approach
+                                    title: format!("Open folder: '{}'", path_str),
+                                    // TODO: see what should i add here
+                                    description: String::new(),
+                                    icon_path: None,
+                                    // FIXME: there's no way to correctly separate an argument string, event if the user
+                                    //        uses simple/double quotes or just puts the string with spaces in there
+                                    action: Action::Open(
+                                        DefaultApplicationType::FileExplorer,
+                                        path.to_string_lossy().into(),
+                                    ),
+                                    completion: Some(completion),
+                                });
+                            } else if path.is_file() {
+                                let path_str = path.to_string_lossy();
+                                if let Some(app_type) = SysInfoLoader::try_get_file_mime_type_str(&path_str) {
+                                    s.push(Suggestion {
+                                        // TODO: this approach is pretty bad
+                                        //       find a good way to reference actions back from list model
+                                        id: format!("system.folder.open {}", path_str),
+                                        // TODO: investigate what is the risk of using "to_string_lossy" here,
+                                        //       and if there's a better approach
+                                        title: format!("Open folder: '{}'", path_str),
+                                        // TODO: see what should i add here
+                                        description: String::new(),
+                                        icon_path: None,
+                                        // FIXME: there's no way to correctly separate an argument string, event if the user
+                                        //        uses simple/double quotes or just puts the string with spaces in there
+                                        action: Action::Open(
+                                            app_type,
+                                            path_str.into_owned(),
+                                        ),
+                                        completion: Some(completion),
+                                    });
+                                }
+                            }
                         }
                     }
                 }
