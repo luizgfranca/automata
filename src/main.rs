@@ -18,6 +18,7 @@ use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, glib};
 use gtk4::gdk::Key;
 use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
+use sysaction::find;
 
 fn load_css() {
     let display = gdk::Display::default().expect("unable to load default display");
