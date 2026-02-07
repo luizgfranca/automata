@@ -11,18 +11,27 @@ impl CommandExecutionProvider {
 }
 
 impl SuggestionProvider for CommandExecutionProvider {
-    fn load_dynamic_suggestions(&self, input: &str) -> Vec<Suggestion> {
-        let mut attributes: HashMap<String, String> = HashMap::new();
-        attributes.insert(CMDLINE_KEY.to_string(), input.to_string());
+    fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
+        match input {
+            Some(input_str) => {
+                if input_str.is_empty() {
+                    return vec![]
+                }
 
-        std::vec![Suggestion {
-            provider_id: String::from(CommandExecutionProvider::ID),
-            id: String::from("run"),
-            title: format!("RUN: {input}"),
-            description: None,
-            icon_path: None,
-            attributes
-        }]
+                let mut attributes: HashMap<String, String> = HashMap::new();
+                attributes.insert(CMDLINE_KEY.to_string(), input_str.to_string());
+
+                std::vec![Suggestion {
+                    provider_id: String::from(CommandExecutionProvider::ID),
+                    id: String::from("run"),
+                    title: format!("RUN: {input_str}"),
+                    description: None,
+                    icon_path: None,
+                    attributes
+                }]
+            }
+            None => vec![],
+        }
     }
 
     fn activate(&self, item: &Suggestion) {

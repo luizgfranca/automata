@@ -9,7 +9,7 @@ pub trait SuggestionProvider {
         vec![]
     }
 
-    fn load_dynamic_suggestions(&self, input: &str) -> Vec<Suggestion> {
+    fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
         vec![]
     }
 

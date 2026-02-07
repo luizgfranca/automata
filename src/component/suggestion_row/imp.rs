@@ -34,6 +34,7 @@ impl BoxImpl for SuggestionRow {}
 
 #[derive(Default)]
 pub struct SuggestionRowData {
+    pub provider: std::cell::RefCell<String>,
     pub id: std::cell::RefCell<String>,
     pub title: std::cell::RefCell<String>,
     pub description: std::cell::RefCell<String>,
