@@ -2,7 +2,7 @@ use evalexpr::Value;
 use std::collections::HashMap;
 
 use crate::module::suggestion::Suggestion;
-use crate::module::suggestion_provider::SuggestionProvider;
+use crate::module::suggestion_provider::{PostActivationAction, SuggestionProvider};
 use crate::system;
 use base64::prelude::*;
 
@@ -49,9 +49,10 @@ impl SuggestionProvider for EncodingProvider {
         }
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction{
         let content = self.load_required_field(item, RESULT_KEY);
         system::clipboard::set_clipboard(&content);
+        PostActivationAction::Close
     }
 
     fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {

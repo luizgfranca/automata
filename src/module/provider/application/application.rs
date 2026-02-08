@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{module::{
     provider::application::desktop_info::DesktopInfoLoader, suggestion::Suggestion,
-    suggestion_provider::SuggestionProvider,
+    suggestion_provider::{PostActivationAction, SuggestionProvider},
 }, system};
 use freedesktop_desktop_entry::DesktopEntry;
 
@@ -70,10 +70,11 @@ impl SuggestionProvider for ApplicationProvider {
         ApplicationProvider::ID.to_string()
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction {
         let value = self.load_required_field(item, CMDLINE_KEY);
         let cmd = DesktopInfoLoader::cmd(&value);
         system::cmd::try_run(&cmd);
+        PostActivationAction::Close
     }
 
     fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{module::{suggestion::Suggestion, suggestion_provider::SuggestionProvider}, system};
+use crate::{module::{suggestion::Suggestion, suggestion_provider::{PostActivationAction, SuggestionProvider}}, system};
 
 static CMDLINE_KEY: &str = "cmd";
 
@@ -38,13 +38,14 @@ impl SuggestionProvider for CommandExecutionProvider {
         }
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction{
         let cmd = self.load_required_field(item, CMDLINE_KEY);
 
         // FIXME: there's no way to correctly separate an argument string if the user
         //        uses simple/double quotes or just puts the string with spaces in there
         let cmdparts: Vec<String> = cmd.split(" ").map(|s| s.to_string()).collect();
         system::cmd::try_run(&cmdparts);
+        PostActivationAction::Close
     }
 
     fn id(&self) -> String {

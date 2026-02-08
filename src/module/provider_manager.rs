@@ -1,10 +1,15 @@
-use std::{collections::BTreeMap};
+use std::collections::BTreeMap;
 
 use crate::module::{
     provider::{
-        application::application::ApplicationProvider, command_execution::CommandExecutionProvider, encoding::EncodingProvider, explorer::explorer::ExplorerProvider, math::MathEvaluationProvider, search::WebSearchProvider, system_action::SystemActionProvider, unit_conversion::unit_conversion::UnitConversionProvider
+        application::application::ApplicationProvider, command_execution::CommandExecutionProvider,
+        encoding::EncodingProvider, explorer::explorer::ExplorerProvider,
+        math::MathEvaluationProvider, search::WebSearchProvider,
+        system_action::system_action::SystemActionProvider,
+        unit_conversion::unit_conversion::UnitConversionProvider,
     },
     suggestion::Suggestion,
+    suggestion_provider::PostActivationAction,
 };
 
 use super::suggestion_provider::SuggestionProvider;
@@ -50,11 +55,11 @@ impl<'a> ProviderManager {
         );
         providers.insert(
             SystemActionProvider::ID.to_string(),
-            Box::new(SystemActionProvider::new())
+            Box::new(SystemActionProvider::new()),
         );
         providers.insert(
             ExplorerProvider::ID.to_string(),
-            Box::new(ExplorerProvider::new())
+            Box::new(ExplorerProvider::new()),
         );
 
         Self {
@@ -142,13 +147,13 @@ impl<'a> ProviderManager {
         }
     }
 
-    pub fn activate(&self, provider_id: &str, suggestion_id: &str) {
+    pub fn activate(&self, provider_id: &str, suggestion_id: &str) -> PostActivationAction {
         let RelatedSuggestionAndProvider {
             suggestion,
             provider,
         } = self.get_suggestion_and_provider_or_fail(provider_id, suggestion_id);
 
-        provider.activate(suggestion);
+        provider.activate(suggestion)
     }
 
     pub fn complete(&self, provider_id: &str, suggestion_id: &str, input: &str) -> Option<String> {

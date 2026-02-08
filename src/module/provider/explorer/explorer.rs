@@ -7,7 +7,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::lib::vector;
 use crate::module::provider::explorer::fslib;
 use crate::module::suggestion::Suggestion;
-use crate::module::suggestion_provider::SuggestionProvider;
+use crate::module::suggestion_provider::{PostActivationAction, SuggestionProvider};
 use crate::system;
 
 #[derive(Debug, EnumString, EnumIter, Display)]
@@ -117,7 +117,7 @@ impl SuggestionProvider for ExplorerProvider {
         ExplorerProvider::ID.to_string()
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction {
         let entry_type = EntryType::from_str(&self.load_required_field(item, ENTRY_TYPE_KEY))
             .expect(&format!(
                 "expected value of {ENTRY_TYPE_KEY} field to always be a member of the EntryType enum"
@@ -144,7 +144,9 @@ impl SuggestionProvider for ExplorerProvider {
 
                 system::cmd::try_run(&cmd);
             }
-        }
+        };
+
+        PostActivationAction::Close
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {

@@ -1,7 +1,7 @@
 use crate::{
     module::{
         provider::unit_conversion::conversionlib, suggestion::Suggestion,
-        suggestion_provider::SuggestionProvider,
+        suggestion_provider::{PostActivationAction, SuggestionProvider},
     },
     system,
 };
@@ -81,11 +81,13 @@ impl SuggestionProvider for UnitConversionProvider {
         }
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction {
         let qty = self.load_required_field(item, CONVERTED_QTY_KEY);
         let value = self.load_required_field(item, CONVERTED_UNIT_KEY);
         system::clipboard::set_clipboard(&format!("{qty} {value}"));
+        PostActivationAction::Close
     }
+
 
     fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
         let qty = self.load_required_field(item, CONVERTED_QTY_KEY);

@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use crate::{
-    component::suggestion_row::SuggestionRowData, module::provider_manager::ProviderManager,
+    component::suggestion_row::SuggestionRowData, module::{provider_manager::ProviderManager, suggestion_provider::PostActivationAction},
 };
 
 pub struct MultitoolApplication {
@@ -30,11 +30,11 @@ impl MultitoolApplication {
             .collect()
     }
 
-    pub fn activate(&self, provider_id: &str, suggestion_id: &str) {
+    pub fn activate(&self, provider_id: &str, suggestion_id: &str) -> PostActivationAction {
         self.provider_mgr
             .lock()
             .unwrap()
-            .activate(provider_id, suggestion_id);
+            .activate(provider_id, suggestion_id)
     }
 
     pub fn try_get_completion(&self, provider_id: &str, suggestion_id: &str, input: &str) -> Option<String> {

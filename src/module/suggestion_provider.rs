@@ -1,5 +1,10 @@
 use crate::module::suggestion::Suggestion;
 
+pub enum PostActivationAction {
+    Nothing,
+    Close,
+}
+
 pub trait SuggestionProvider {
     fn id(&self) -> String;
 
@@ -13,7 +18,7 @@ pub trait SuggestionProvider {
         vec![]
     }
 
-    fn activate(&self, item: &Suggestion);
+    fn activate(&self, item: &Suggestion) -> PostActivationAction;
 
     fn complete(&self, item: &Suggestion, input: &str) -> Option<String> {
         None

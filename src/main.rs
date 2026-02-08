@@ -22,6 +22,7 @@ use gtk::{Application, ApplicationWindow, glib};
 use gtk4::gdk::Key;
 use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
 
+use crate::module::suggestion_provider::PostActivationAction;
 use crate::multitool::multitool::MultitoolApplication;
 
 fn load_css() {
@@ -122,6 +123,7 @@ fn main() -> glib::ExitCode {
 
         let selection_model_clone = selection_model.clone();
         let multitool_clone = multitool.clone();
+        let window_clone = window.clone();
         main_input.connect_activate(move |_| {
             dbg!("main_input.connect_activate");
             let selected = selection_model_clone.selected_item(); 
@@ -132,11 +134,10 @@ fn main() -> glib::ExitCode {
             let row_data = selected.and_downcast::<SuggestionRowData>()
                 .expect("selected item should always be able to downcast to the type defined for its row");
             {
-                multitool_clone.activate(&row_data.provider(), &row_data.id());
-                // TODO: reimplement post run action
-                // if let PostRunAction::Close = post_run_action {
-                //     window_clone.close();
-                // }
+                let after = multitool_clone.activate(&row_data.provider(), &row_data.id());
+                if let PostActivationAction::Close = after {
+                    window_clone.close();
+                }
             }
         });
 

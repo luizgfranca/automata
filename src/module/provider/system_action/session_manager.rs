@@ -1,6 +1,6 @@
 use logind_zbus::manager::{IsSupported, ManagerProxyBlocking};
-use strum_macros::*;
 use zbus::blocking::Connection;
+use strum_macros::*;
 
 #[derive(Debug, EnumString, EnumIter, Display, Clone)]
 pub enum SessionOperation {
@@ -15,7 +15,7 @@ pub enum SessionOperation {
 }
 
 #[derive(Debug)]
-pub struct SessionMgr {
+pub struct SessionManager {
     pub enable_suspend: bool,
     pub enable_reboot: bool,
     pub enable_poweroff: bool,
@@ -23,7 +23,7 @@ pub struct SessionMgr {
     connection: Connection,
 }
 
-impl SessionMgr {
+impl SessionManager {
     // TODO: handle errors here more gracefully,
     //       if the connection fails should only not display related options
     pub fn new() -> Self {

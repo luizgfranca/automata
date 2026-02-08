@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use evalexpr::Value;
 
+use crate::module::suggestion_provider::PostActivationAction;
 use crate::module::{suggestion_provider::SuggestionProvider};
 use crate::module::suggestion::Suggestion;
 use crate::system;
@@ -28,9 +29,10 @@ impl SuggestionProvider for MathEvaluationProvider {
         MathEvaluationProvider::ID.to_string()
     }
 
-    fn activate(&self, item: &Suggestion) {
+    fn activate(&self, item: &Suggestion) -> PostActivationAction{
         let result = self.load_required_field(item, RESULT_EXP_KEY);
         system::clipboard::set_clipboard(&result);
+        PostActivationAction::Close
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
