@@ -53,4 +53,9 @@ impl SuggestionProvider for EncodingProvider {
         let content = self.load_required_field(item, RESULT_KEY);
         system::clipboard::set_clipboard(&content);
     }
+
+    fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
+        let content = self.load_required_field(item, RESULT_KEY);
+        Some(content)
+    }
 }

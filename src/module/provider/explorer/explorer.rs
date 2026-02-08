@@ -153,4 +153,19 @@ impl SuggestionProvider for ExplorerProvider {
             None => vec![],
         }
     }
+
+    fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
+        let entry_type = EntryType::from_str(&self.load_required_field(item, ENTRY_TYPE_KEY))
+            .expect(&format!(
+                "expected value of {ENTRY_TYPE_KEY} field to always be a member of the EntryType enum"
+            ));
+        let mut path = self.load_required_field(item, PATH_KEY);
+
+        // makes it easier to navigate deep folders using tab
+        if let EntryType::Folder = entry_type {
+            path.push_str("/");
+        }
+
+        Some(path)
+    }
 }

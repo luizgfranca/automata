@@ -159,7 +159,7 @@ fn main() -> glib::ExitCode {
                     // need to do this in this way to free the lock before changing the input,
                     // which would change the suggestions and create a deadlock
                     // TODO: restructure this
-                    let maybe_completion = multitool_clone.try_get_completion(&row_data.provider(), &row_data.id());
+                    let maybe_completion = multitool_clone.try_get_completion(&row_data.provider(), &row_data.id(), main_input_clone.text().as_str());
                     if let Some(completion) = maybe_completion {
                         dbg!(&completion);
                         main_input_clone.set_text(&completion);

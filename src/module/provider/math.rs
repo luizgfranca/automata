@@ -29,8 +29,8 @@ impl SuggestionProvider for MathEvaluationProvider {
     }
 
     fn activate(&self, item: &Suggestion) {
-        let content = self.load_required_field(item, RESULT_EXP_KEY);
-        system::clipboard::set_clipboard(&content);
+        let result = self.load_required_field(item, RESULT_EXP_KEY);
+        system::clipboard::set_clipboard(&result);
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
@@ -52,5 +52,10 @@ impl SuggestionProvider for MathEvaluationProvider {
             },
             None => vec![],
         }
+    }
+
+    fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
+        let result = self.load_required_field(item, RESULT_EXP_KEY);
+        Some(result)
     }
 }

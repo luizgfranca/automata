@@ -37,7 +37,7 @@ impl MultitoolApplication {
             .activate(provider_id, suggestion_id);
     }
 
-    pub fn try_get_completion(&self, provider_id: &str, suggestion_id: &str) -> Option<String> {
-        None
+    pub fn try_get_completion(&self, provider_id: &str, suggestion_id: &str, input: &str) -> Option<String> {
+        self.provider_mgr.lock().unwrap().complete(provider_id, suggestion_id, input)
     }
 }

@@ -75,4 +75,8 @@ impl SuggestionProvider for ApplicationProvider {
         let cmd = DesktopInfoLoader::cmd(&value);
         system::cmd::try_run(&cmd);
     }
+
+    fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
+        Some(item.title.clone())
+    }
 }

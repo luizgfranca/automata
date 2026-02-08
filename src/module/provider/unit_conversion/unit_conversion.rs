@@ -87,6 +87,12 @@ impl SuggestionProvider for UnitConversionProvider {
         system::clipboard::set_clipboard(&format!("{qty} {value}"));
     }
 
+    fn complete(&self, item: &Suggestion, _: &str) -> Option<String> {
+        let qty = self.load_required_field(item, CONVERTED_QTY_KEY);
+        let value = self.load_required_field(item, CONVERTED_UNIT_KEY);
+        Some(format!("{qty} {value}"))
+    }
+
     fn id(&self) -> String {
         String::from(UnitConversionProvider::ID)
     }
