@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::lib::vector;
 use crate::module::provider::explorer::fslib;
 use crate::module::suggestion::Suggestion;
 use crate::module::suggestion_provider::SuggestionProvider;
+use crate::system;
 
 #[derive(Debug, EnumString, EnumIter, Display)]
 enum EntryType {
@@ -79,7 +81,9 @@ impl ExplorerProvider {
         );
 
         let maybe_origin = fslib::try_get_context_folder(&path);
-        if let Some(origin) = maybe_origin && origin.exists() {
+        if let Some(origin) = maybe_origin
+            && origin.exists()
+        {
             let parent_dir = fs::read_dir(origin).expect(
                 "expected that when result is returned for parent path the folder is valid",
             );
@@ -113,8 +117,34 @@ impl SuggestionProvider for ExplorerProvider {
         ExplorerProvider::ID.to_string()
     }
 
-    fn activate(&self, _: &Suggestion) {
-        todo!()
+    fn activate(&self, item: &Suggestion) {
+        let entry_type = EntryType::from_str(&self.load_required_field(item, ENTRY_TYPE_KEY))
+            .expect(&format!(
+                "expected value of {ENTRY_TYPE_KEY} field to always be a member of the EntryType enum"
+            ));
+        let path = self.load_required_field(item, PATH_KEY);
+
+        match entry_type {
+            EntryType::File => {
+                let cmd = system::desktop::get_open_cmd(
+                    &system::desktop::DefaultApplicationType::Mime(
+                        system::desktop::try_get_file_mimetype(&path)
+                            .expect("expected all files to have a mimeType"),
+                    ),
+                    &path,
+                );
+
+                system::cmd::try_run(&cmd);
+            }
+            EntryType::Folder => {
+                let cmd = system::desktop::get_open_cmd(
+                    &system::desktop::DefaultApplicationType::FileExplorer,
+                    &path,
+                );
+
+                system::cmd::try_run(&cmd);
+            }
+        }
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {

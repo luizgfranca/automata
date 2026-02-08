@@ -29,7 +29,7 @@ pub fn get_default_app_cmd(app_type: &DefaultApplicationType) -> String {
         DefaultApplicationType::Browser => query_default_app(BROWSER_MIMETYPE)
             .expect("TODO: handle when user does not have a default app to open web pages"),
         DefaultApplicationType::Mime(s) => query_default_app(s)
-            .expect("TODO: handle when user does not have a default app to open folders"),
+            .expect("TODO: handle when user does not have a default app to open mimeType"),
     }
 }
 
