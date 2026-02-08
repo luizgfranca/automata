@@ -3,9 +3,10 @@ use std::collections::HashMap;
 
 use crate::module::suggestion::Suggestion;
 use crate::module::suggestion_provider::SuggestionProvider;
+use crate::system;
 use base64::prelude::*;
 
-static RESULT_EXP_KEY: &str = "result";
+static RESULT_KEY: &str = "result";
 
 pub struct EncodingProvider {}
 
@@ -19,7 +20,7 @@ impl EncodingProvider {
 
 fn attrs(value: &str) -> HashMap<String, String> {
     let mut result: HashMap<String, String> = HashMap::new();
-    result.insert(RESULT_EXP_KEY.to_string(), value.to_string());
+    result.insert(RESULT_KEY.to_string(), value.to_string());
     result
 }
 
@@ -48,7 +49,8 @@ impl SuggestionProvider for EncodingProvider {
         }
     }
 
-    fn activate(&self, _: &Suggestion) {
-        todo!()
+    fn activate(&self, item: &Suggestion) {
+        let content = self.load_required_field(item, RESULT_KEY);
+        system::clipboard::set_clipboard(&content);
     }
 }

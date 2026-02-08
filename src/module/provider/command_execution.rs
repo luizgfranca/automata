@@ -39,8 +39,7 @@ impl SuggestionProvider for CommandExecutionProvider {
     }
 
     fn activate(&self, item: &Suggestion) {
-        let cmd = item.attributes.get(CMDLINE_KEY)
-            .expect(&self.assert_msg("expected cmd attribute to always be filled in suggestions"));
+        let cmd = self.load_required_field(item, CMDLINE_KEY);
 
         // FIXME: there's no way to correctly separate an argument string if the user
         //        uses simple/double quotes or just puts the string with spaces in there

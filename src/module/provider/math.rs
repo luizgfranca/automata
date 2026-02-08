@@ -3,6 +3,7 @@ use evalexpr::Value;
 
 use crate::module::{suggestion_provider::SuggestionProvider};
 use crate::module::suggestion::Suggestion;
+use crate::system;
 
 static RESULT_EXP_KEY: &str = "result";
 
@@ -27,8 +28,9 @@ impl SuggestionProvider for MathEvaluationProvider {
         MathEvaluationProvider::ID.to_string()
     }
 
-    fn activate(&self, _: &Suggestion) {
-        todo!()
+    fn activate(&self, item: &Suggestion) {
+        let content = self.load_required_field(item, RESULT_EXP_KEY);
+        system::clipboard::set_clipboard(&content);
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
