@@ -2,9 +2,9 @@ use std::{collections::BTreeMap};
 
 use crate::module::{
     provider::{
-        application::application::ApplicationProvider, command_execution::CommandExecutionProvider,
+        application::application::ApplicationProvider, command_execution::CommandExecutionProvider, math::MathEvaluationProvider,
     },
-    suggestion::{Suggestion},
+    suggestion::Suggestion,
 };
 
 use super::suggestion_provider::SuggestionProvider;
@@ -25,12 +25,16 @@ impl<'a> ProviderManager {
     pub fn new() -> Self {
         let mut providers: BTreeMap<String, Box<dyn SuggestionProvider>> = BTreeMap::new();
         providers.insert(
+            ApplicationProvider::ID.to_string(),
+            Box::new(ApplicationProvider::new()),
+        );
+        providers.insert(
             CommandExecutionProvider::ID.to_string(),
             Box::new(CommandExecutionProvider {}),
         );
         providers.insert(
-            ApplicationProvider::ID.to_string(),
-            Box::new(ApplicationProvider::new()),
+            MathEvaluationProvider::ID.to_string(),
+            Box::new(MathEvaluationProvider {}),
         );
 
         Self {
