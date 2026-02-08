@@ -10,6 +10,10 @@ pub struct MathEvaluationProvider {}
 
 impl MathEvaluationProvider {
     pub const ID: &str = "system.math";
+
+    pub fn new() -> Self {
+        Self {}
+    }
 }
 
 fn attrs(value: Value) -> HashMap<String, String>{

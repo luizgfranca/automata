@@ -8,6 +8,10 @@ pub struct CommandExecutionProvider {}
 
 impl CommandExecutionProvider {
     pub const ID: &str = "system.cmd";
+
+    pub fn new() -> Self {
+        Self {}
+    }
 }
 
 impl SuggestionProvider for CommandExecutionProvider {
