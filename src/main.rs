@@ -3,6 +3,7 @@ mod module;
 mod multitool;
 mod system;
 mod fsutil;
+mod lib;
 mod conversionutil;
 mod mathutils;
 mod sessionmgr;
