@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use crate::{module::{
+    provider::application::desktop_info::DesktopInfoLoader, suggestion::Suggestion,
+    suggestion_provider::SuggestionProvider,
+}, system};
 use freedesktop_desktop_entry::DesktopEntry;
-use crate::module::{provider::application::desktop_info::DesktopInfoLoader, suggestion::Suggestion, suggestion_provider::SuggestionProvider};
 
 static CMDLINE_KEY: &str = "cmd";
 
@@ -15,7 +18,9 @@ impl ApplicationProvider {
 
 impl ApplicationProvider {
     pub fn new() -> Self {
-        Self { loader: DesktopInfoLoader::new() }
+        Self {
+            loader: DesktopInfoLoader::new(),
+        }
     }
 
     fn get_suggestion_from_desktop_entry(&self, entry: &DesktopEntry) -> Suggestion {
@@ -24,7 +29,9 @@ impl ApplicationProvider {
             .expect("desktop entry name expected to be always present")
             .to_string();
 
-        let cmd = entry.exec().expect(&self.assert_msg("expected all desktopp entries to have an exec attribute"));
+        let cmd = entry
+            .exec()
+            .expect(&self.assert_msg("expected all desktopp entries to have an exec attribute"));
 
         let description = match entry.comment(&self.loader.locales) {
             Some(comment) => comment.to_string(),
@@ -40,7 +47,7 @@ impl ApplicationProvider {
             title: name.clone(),
             description: Some(description),
             icon_path: entry.icon().map(|s| s.to_string()),
-            attributes
+            attributes,
         }
     }
 }
@@ -51,7 +58,8 @@ impl SuggestionProvider for ApplicationProvider {
     }
 
     fn load_static_suggestions(&self) -> Vec<Suggestion> {
-        self.loader.desktop_entries
+        self.loader
+            .desktop_entries
             .iter()
             .filter(|e| !e.no_display())
             .map(|e| self.get_suggestion_from_desktop_entry(e))
@@ -63,6 +71,8 @@ impl SuggestionProvider for ApplicationProvider {
     }
 
     fn activate(&self, item: &Suggestion) {
-        dbg!(item);
+        let value = self.load_required_field(item, CMDLINE_KEY);
+        let cmd = DesktopInfoLoader::cmd(&value);
+        system::cmd::try_run(&cmd);
     }
 }

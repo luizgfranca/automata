@@ -22,4 +22,13 @@ pub trait SuggestionProvider {
     fn assert_msg(&self, msg: &str) -> String {
         format!("{}: {}", self.id(), msg)
     }
+
+    fn load_required_field(&self, s: &Suggestion, key: &str) -> String {
+        // TODO: there is a way to avoid cloning the string here, but I was too lazy
+        s.attributes
+            .get(key)
+            .expect(
+                &self.assert_msg(&format!("field {key} required but not present"))
+            ).clone()
+    }
 }
