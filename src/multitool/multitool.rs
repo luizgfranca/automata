@@ -21,8 +21,7 @@ impl MultitoolApplication {
     }
 
     pub fn get_relevant_suggestion_rows(&self, input: Option<&str>) -> Vec<SuggestionRowData> {
-        self
-            .provider_mgr
+        self.provider_mgr
             .lock()
             .unwrap()
             .load_suggestions(input)
@@ -31,7 +30,12 @@ impl MultitoolApplication {
             .collect()
     }
 
-    pub fn activate(&self, provider_id: &str, suggestion_id: &str) {}
+    pub fn activate(&self, provider_id: &str, suggestion_id: &str) {
+        self.provider_mgr
+            .lock()
+            .unwrap()
+            .activate(provider_id, suggestion_id);
+    }
 
     pub fn try_get_completion(&self, provider_id: &str, suggestion_id: &str) -> Option<String> {
         None

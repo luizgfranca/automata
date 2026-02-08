@@ -53,6 +53,7 @@ impl SuggestionRowData {
     pub fn from(source: &Suggestion) -> Self {
         let s: Self = glib::Object::new();
         s.imp().id.replace(source.id.clone());
+        s.imp().provider.replace(source.provider_id.clone());
         s.imp().title.replace(source.title.clone());
         s.imp().description.replace(
             source

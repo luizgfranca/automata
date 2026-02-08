@@ -79,7 +79,7 @@ impl ExplorerProvider {
         );
 
         let maybe_origin = fslib::try_get_context_folder(&path);
-        if let Some(origin) = maybe_origin {
+        if let Some(origin) = maybe_origin && origin.exists() {
             let parent_dir = fs::read_dir(origin).expect(
                 "expected that when result is returned for parent path the folder is valid",
             );
