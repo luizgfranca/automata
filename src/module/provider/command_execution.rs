@@ -7,7 +7,7 @@ static CMDLINE_KEY: &str = "cmd";
 pub struct CommandExecutionProvider {}
 
 impl CommandExecutionProvider {
-    pub const ID: &str = "system.cmd";
+    pub const ID: &str = "xsystem.cmd";
 
     pub fn new() -> Self {
         Self {}
