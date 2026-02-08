@@ -3,7 +3,7 @@ use crate::module::suggestion::Suggestion;
 pub trait SuggestionProvider {
     fn id(&self) -> String;
 
-    fn init(&self) {}
+    fn init(&mut self) {}
 
     fn load_static_suggestions(&self) -> Vec<Suggestion> {
         vec![]

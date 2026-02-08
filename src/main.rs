@@ -88,7 +88,6 @@ fn main() -> glib::ExitCode {
         });
 
         multitool.initialize();
-
         set_suggestion_list_store_rows(&list_store, multitool.get_relevant_suggestion_rows(None));
 
         let multitool_clone = multitool.clone();
@@ -214,7 +213,6 @@ fn main() -> glib::ExitCode {
         window.add_controller(key_controller);
 
         window.present();
-        multitool.initialize();
     });
 
     app.run()

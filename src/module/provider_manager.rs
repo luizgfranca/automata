@@ -1,8 +1,10 @@
-use std::{collections::BTreeMap, iter::Map};
+use std::{collections::BTreeMap};
 
 use crate::module::{
-    provider::command_execution::CommandExecutionProvider,
-    suggestion::{self, Suggestion},
+    provider::{
+        application::application::ApplicationProvider, command_execution::CommandExecutionProvider,
+    },
+    suggestion::{Suggestion},
 };
 
 use super::suggestion_provider::SuggestionProvider;
@@ -26,6 +28,10 @@ impl<'a> ProviderManager {
             CommandExecutionProvider::ID.to_string(),
             Box::new(CommandExecutionProvider {}),
         );
+        providers.insert(
+            ApplicationProvider::ID.to_string(),
+            Box::new(ApplicationProvider::new()),
+        );
 
         Self {
             providers,
@@ -35,7 +41,8 @@ impl<'a> ProviderManager {
     }
 
     pub fn init(&mut self) {
-        self.providers.iter().for_each(|(_, it)| {
+        dbg!("provideramanger::init");
+        self.providers.iter_mut().for_each(|(_, it)| {
             it.init();
         });
 
@@ -64,21 +71,15 @@ impl<'a> ProviderManager {
 
     pub fn load_suggestions(&mut self, input: Option<&str>) -> Vec<Suggestion> {
         let mut new_dynamic_suggestions: Vec<Suggestion> = Vec::new();
-
         for (_, it) in self.providers.iter() {
             let mut suggestions = it.load_dynamic_suggestions(input);
             new_dynamic_suggestions.append(&mut suggestions)
         }
-
         self.dynamic_suggestions = new_dynamic_suggestions.clone();
 
-        let static_suggestions = self.get_relevant_static_suggestions(input);
-
-        new_dynamic_suggestions
-            .iter()
-            .map(|x| x.clone())
-            .chain(static_suggestions)
-            .collect()
+        let mut result = self.get_relevant_static_suggestions(input);
+        result.append(&mut new_dynamic_suggestions);
+        result
     }
 
     fn find_referenced_suggestion(
