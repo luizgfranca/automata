@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::module::suggestion::Suggestion;
 use crate::module::suggestion_provider::SuggestionProvider;
+use crate::system;
 
 static QUERY_KEY: &str = "query";
 
@@ -26,8 +27,11 @@ impl SuggestionProvider for WebSearchProvider {
         WebSearchProvider::ID.to_string()
     }
 
-    fn activate(&self, _: &Suggestion) {
-        todo!()
+    fn activate(&self, item: &Suggestion) {
+        let query = self.load_required_field(item, QUERY_KEY);
+        let url = get_brave_search_url(&query);
+        let cmd = system::desktop::get_open_cmd(&system::desktop::DefaultApplicationType::Browser, &url);
+        system::cmd::try_run(&cmd);
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
@@ -45,4 +49,12 @@ impl SuggestionProvider for WebSearchProvider {
             None => vec![],
         }
     }
+}
+
+pub fn get_brave_search_url(query: &str) -> String {
+    let mut url = String::new();
+    url.push_str("search.brave.com/search?source=desktop&q=");
+    url.push_str(&query.replace(" ", "+"));
+
+    url
 }
