@@ -2,7 +2,7 @@ use std::{collections::BTreeMap};
 
 use crate::module::{
     provider::{
-        application::application::ApplicationProvider, command_execution::CommandExecutionProvider, encoding::EncodingProvider, math::MathEvaluationProvider
+        application::application::ApplicationProvider, command_execution::CommandExecutionProvider, encoding::EncodingProvider, math::MathEvaluationProvider, unit_conversion::unit_conversion::UnitConversionProvider
     },
     suggestion::Suggestion,
 };
@@ -39,6 +39,10 @@ impl<'a> ProviderManager {
         providers.insert(
             EncodingProvider::ID.to_string(),
             Box::new(EncodingProvider::new()),
+        );
+        providers.insert(
+            UnitConversionProvider::ID.to_string(),
+            Box::new(UnitConversionProvider::new()),
         );
 
         Self {
