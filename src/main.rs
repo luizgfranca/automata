@@ -2,26 +2,19 @@ mod component;
 mod module;
 mod multitool;
 mod system;
-mod fsutil;
 mod lib;
-mod conversionutil;
-mod mathutils;
-mod sessionmgr;
-mod suggestions;
-mod sysaction;
-mod sysinfo;
 
 use std::sync::Arc;
 
 use component::suggestion_row::{SuggestionRow, SuggestionRowData};
 use gtk4::gio::{self};
-use mathutils::*;
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, glib};
 use gtk4::gdk::Key;
 use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
 
+use crate::lib::math;
 use crate::module::suggestion_provider::PostActivationAction;
 use crate::multitool::multitool::MultitoolApplication;
 
@@ -169,7 +162,7 @@ fn main() -> glib::ExitCode {
                     return gtk::glib::Propagation::Stop;
                 }
                 Key::Down => {
-                    let new_position = u32_increment_wrap(
+                    let new_position = math::u32_increment_wrap(
                         selection_model_clone.selected(),
                         0,
                         selection_model_clone.n_items() - 1,
@@ -185,7 +178,7 @@ fn main() -> glib::ExitCode {
                     return gtk::glib::Propagation::Stop;
                 }
                 Key::Up => {
-                    let new_position = u32_decrement_wrap(
+                    let new_position = math::u32_decrement_wrap(
                         selection_model_clone.selected(),
                         0,
                         selection_model_clone.n_items() - 1,
