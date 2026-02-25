@@ -26,7 +26,6 @@ impl SuggestionRow {
         imp.name.set_text(&data.title());
         imp.description.set_text(&data.description());
         if let Some(path) = data.icon() {
-            dbg!(&data.icon());
             if Path::new(&path).exists() {
                 imp.image.set_from_file(Some(&path));
             } else {

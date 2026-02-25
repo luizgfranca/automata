@@ -12,6 +12,7 @@ use gtk4::gio::{self};
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, glib};
 use gtk4::gdk::Key;
+use gtk4::glib::{spawn_async, spawn_future_local};
 use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
 
 use crate::lib::math;
@@ -82,16 +83,21 @@ fn main() -> glib::ExitCode {
             child.set_data(&data);
         });
 
-        multitool.initialize();
-        set_suggestion_list_store_rows(&list_store, multitool.get_relevant_suggestion_rows(None));
-
+        set_suggestion_list_store_rows(&list_store, vec![]);
         let multitool_clone = multitool.clone();
         let list_store_clone = list_store.clone();
         main_input.connect_changed(move |input| {
             dbg!("main_input.connect_changed");
             let input_str: String = input.text().into();
-
             set_suggestion_list_store_rows(&list_store_clone, multitool_clone.get_relevant_suggestion_rows(Some(&input_str)));
+        });
+
+        let multitool_clone = multitool.clone();
+        let list_store_clone = list_store.clone();
+        glib::idle_add_local(move || {
+            multitool_clone.initialize();
+            set_suggestion_list_store_rows(&list_store_clone, multitool_clone.get_relevant_suggestion_rows(None));
+            glib::ControlFlow::Break
         });
 
         let selection_model = gtk::SingleSelection::new(Some(list_store));
@@ -106,6 +112,7 @@ fn main() -> glib::ExitCode {
             {
                 multitool_clone.activate(&row_data.provider(), &row_data.id());
             }
+
         });
 
         let suggestion_list_scrollable = ScrolledWindow::builder()
