@@ -1,3 +1,5 @@
+use std::env;
+
 use freedesktop_desktop_entry::{DesktopEntry, Iter, default_paths, get_languages_from_env};
 use xdg_utils::{query_default_app, query_mime_info};
 
@@ -11,6 +13,10 @@ pub enum DefaultApplicationType {
     FileExplorer,
     Browser,
     Mime(String),
+}
+
+pub fn get_home_path() -> String {
+    env::var("HOME").expect("expected system to always have a home directory")
 }
 
 pub fn try_get_file_mimetype(path: &str) -> Option<String> {

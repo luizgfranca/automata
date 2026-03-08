@@ -1,10 +1,12 @@
 use crate::module::suggestion::Suggestion;
+use async_trait::async_trait;
 
 pub enum PostActivationAction {
     Nothing,
     Close,
 }
 
+#[async_trait]
 pub trait SuggestionProvider {
     fn id(&self) -> String;
 
@@ -15,6 +17,10 @@ pub trait SuggestionProvider {
     }
 
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
+        vec![]
+    }
+
+    async fn load_async_dynamic_suggestions(&self, input: String) -> Vec<Suggestion> {
         vec![]
     }
 
@@ -32,8 +38,7 @@ pub trait SuggestionProvider {
         // TODO: there is a way to avoid cloning the string here, but I was too lazy
         s.attributes
             .get(key)
-            .expect(
-                &self.assert_msg(&format!("field {key} required but not present"))
-            ).clone()
+            .expect(&self.assert_msg(&format!("field {key} required but not present")))
+            .clone()
     }
 }

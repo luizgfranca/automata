@@ -6,3 +6,4 @@ pub mod unit_conversion;
 pub mod search;
 pub mod system_action;
 pub mod explorer;
+pub mod find;

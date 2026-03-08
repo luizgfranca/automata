@@ -1,0 +1,177 @@
+commit 241705818a8379e9509bd8d20365cad372cc4f52
+Author: luizgfc <luizgfc@proton.me>
+Date:   Mon Dec 22 21:48:00 2025 -0300
+
+    temporarily postponed attempt for "find"
+
+diff --git a/src/main.rs b/src/main.rs
+index 19afbfc..2bb0291 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -18,6 +18,7 @@ use gtk::prelude::*;
+ use gtk::{Application, ApplicationWindow, glib};
+ use gtk4::gdk::Key;
+ use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
++use sysaction::find;
+ 
+ fn load_css() {
+     let display = gdk::Display::default().expect("unable to load default display");
+diff --git a/src/suggestions.rs b/src/suggestions.rs
+index df5fb68..429ea82 100644
+--- a/src/suggestions.rs
++++ b/src/suggestions.rs
+@@ -12,7 +12,7 @@ use wl_clipboard_rs::copy::{MimeType, Options, Source};
+ use crate::{
+     conversionutil,
+     sessionmgr::{SessionMgr, SessionOperation},
+-    sysaction,
++    sysaction::{self, find},
+     sysinfo::{DefaultApplicationType, SysInfoLoader},
+ };
+ use regex::Regex;
+@@ -191,6 +191,10 @@ impl SuggestionMgr {
+     fn load_dynamic_items(&self, input: &str) -> Vec<Suggestion> {
+         let mut s: Vec<Suggestion> = Vec::new();
+ 
++        // TODO: will need some refactoring to make this work correctly
++        // let mut finder_suggestions = self.get_finder_suggestions(input);
++        // s.append(&mut finder_suggestions);
++
+         let mut folder_suggestions = self.get_folder_suggestions(input);
+         s.append(&mut folder_suggestions);
+ 
+@@ -340,19 +344,16 @@ impl SuggestionMgr {
+         } else if path.is_file() {
+             if let Some(app_type) = SysInfoLoader::try_get_file_mime_type_str(&final_input_path) {
+                 s.push(Suggestion {
+-                    // TODO: this approach is pretty ba
++                    // todo: this approach is pretty ba
+                     //       find a good way to reference actions back from list model
+                     id: format!("system.file.open {}", input),
+-                    title: format!("Open File: '{}'", input),
+-                    // TODO: see what should i add here
++                    title: format!("open file: '{}'", input),
++                    // todo: see what should i add here
+                     description: String::new(),
+                     icon_path: None,
+-                    // FIXME: there's no way to correctly separate an argument string, event if the user
++                    // fixme: there's no way to correctly separate an argument string, event if the user
+                     //        uses simple/double quotes or just puts the string with spaces in there
+-                    action: Action::Open(
+-                        app_type,
+-                        final_input_path.to_string(),
+-                    ),
++                    action: Action::Open(app_type, final_input_path.to_string()),
+                     completion: None,
+                 });
+             }
+@@ -397,7 +398,9 @@ impl SuggestionMgr {
+                                 });
+                             } else if path.is_file() {
+                                 let path_str = path.to_string_lossy();
+-                                if let Some(app_type) = SysInfoLoader::try_get_file_mime_type_str(&path_str) {
++                                if let Some(app_type) =
++                                    SysInfoLoader::try_get_file_mime_type_str(&path_str)
++                                {
+                                     s.push(Suggestion {
+                                         // TODO: this approach is pretty bad
+                                         //       find a good way to reference actions back from list model
+@@ -410,10 +413,7 @@ impl SuggestionMgr {
+                                         icon_path: None,
+                                         // FIXME: there's no way to correctly separate an argument string, event if the user
+                                         //        uses simple/double quotes or just puts the string with spaces in there
+-                                        action: Action::Open(
+-                                            app_type,
+-                                            path_str.into_owned(),
+-                                        ),
++                                        action: Action::Open(app_type, path_str.into_owned()),
+                                         completion: Some(completion),
+                                     });
+                                 }
+@@ -427,6 +427,52 @@ impl SuggestionMgr {
+         s
+     }
+ 
++    fn get_finder_suggestions(&self, input: &str) -> Vec<Suggestion> {
++        if !input.starts_with("find ") {
++            return vec![];
++        }
++
++        let parts: Vec<&str> = input["find ".len()..].split(" in ").collect();
++        let pattern = parts.get(0)
++            .expect("should always have the first item, considering string starts with 'find '")
++            .trim();
++        let input_location = parts.get(1);
++
++        if pattern.len() == 0 {
++            return vec![];
++        }
++
++        let home_path = env::var("HOME").expect("expected system to always have a home directory");
++
++        let location = if let Some(location) = input_location {
++            location.to_owned()
++        } else {
++            &home_path.to_string()
++        };
++        if !Path::new(location).is_dir() {
++            println!("location {} is no a directory, ignoring", location);
++            return vec![];
++        }
++
++        let result = find(location, pattern);
++        result
++            .split("\n")
++            .filter_map(|item| {
++                match SysInfoLoader::try_get_file_mime_type_str(item) {
++                    Some(app_type) => Some(Suggestion {
++                        id: format!("system.file.open {}", item),
++                        title: format!("open file: '{}'", item),
++                        description: String::new(),
++                        icon_path: None,
++                        action: Action::Open(app_type, item.to_string()),
++                        completion: Some(item.to_string()),
++                    }),
++                    None => None,
++                }
++            })
++            .collect()
++    }
++
+     fn filter_relevant_static_items(&self, input: &str) -> Vec<Suggestion> {
+         self.static_items
+             .iter()
+diff --git a/src/sysaction.rs b/src/sysaction.rs
+index ec597e6..e5ad11d 100644
+--- a/src/sysaction.rs
++++ b/src/sysaction.rs
+@@ -1,4 +1,4 @@
+-use std::process::Command;
++use std::{io::Read, process::{Child, Command, Stdio}};
+ 
+ pub fn try_run(cmd: &Vec<String>) {
+     if let Some(app) = cmd.get(0) {
+@@ -15,3 +15,23 @@ pub fn try_run(cmd: &Vec<String>) {
+         }
+     }
+ }
++
++pub fn find(root: &str, name: &str) -> String {
++    let mut command = Command::new("find");
++    let name_query = format!("*{}*", name);
++    command.args(vec![root, "-name", &name_query]);
++    dbg!(&command);
++
++    let child = command.stdout(Stdio::piped())
++        .spawn()
++        .expect("failed to execute child");
++
++    let output = child
++        .wait_with_output()
++        .expect("failed to wait on child");
++
++    let data = output.stdout.to_vec();
++
++    let out = String::from_utf8(data.to_vec()).expect("unable to interpret output as string");
++    out
++}

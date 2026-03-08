@@ -31,6 +31,7 @@ impl DesktopInfoLoader {
 
     pub fn load(&mut self) {
         let locales = get_languages_from_env();
+
         self.desktop_entries = Iter::new(default_paths())
             .entries(Some(&locales))
             .collect::<Vec<_>>();

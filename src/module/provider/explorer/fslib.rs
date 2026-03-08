@@ -1,7 +1,8 @@
-use std::{env, path::Path};
+use std::path::Path;
+use crate::system;
 
 pub fn unravel_path_string(s: &str) -> String {
-    let home_path = env::var("HOME").expect("expected $HOME to always be defined");
+    let home_path = system::desktop::get_home_path();
 
     let starts_with_home_path_subst = s.chars().nth(0).map_or(false, |c| c == '~');
     let path = if starts_with_home_path_subst {

@@ -1,7 +1,6 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread, time,
-};
+use std::
+    sync::{Arc, Mutex}
+;
 
 use crate::{
     component::suggestion_row::SuggestionRowData,
@@ -10,7 +9,7 @@ use crate::{
 
 pub struct MultitoolApplication {
     // UNWRAP: since don't use poisoning for the lock we can directly unwrap it
-    provider_mgr: Arc<Mutex<ProviderManager>>
+    provider_mgr: Arc<Mutex<ProviderManager>>,
 }
 
 impl MultitoolApplication {
@@ -24,6 +23,10 @@ impl MultitoolApplication {
         self.provider_mgr.lock().unwrap().init();
     }
 
+    pub fn is_initialized(&self) -> bool {
+        self.provider_mgr.lock().unwrap().is_initialized()
+    }
+
     pub fn get_relevant_suggestion_rows(&self, input: Option<&str>) -> Vec<SuggestionRowData> {
         self.provider_mgr
             .lock()
@@ -34,11 +37,21 @@ impl MultitoolApplication {
             .collect()
     }
 
-    pub fn activate(&self, provider_id: &str, suggestion_id: &str) -> PostActivationAction {
+    pub fn get_relevant_resolved_suggestion_rows(&self, input: Option<&str>) -> Vec<SuggestionRowData> {
         self.provider_mgr
             .lock()
             .unwrap()
-            .activate(provider_id, suggestion_id)
+            .get_updated_suggestions_result(input)
+            .iter()
+            .map(|suggestion| SuggestionRowData::from(&suggestion))
+            .collect()
+    }
+
+    pub fn activate(&self, input: &str, provider_id: &str, suggestion_id: &str) -> PostActivationAction {
+        self.provider_mgr
+            .lock()
+            .unwrap()
+            .activate(input, provider_id, suggestion_id)
     }
 
     pub fn try_get_completion(

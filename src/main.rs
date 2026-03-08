@@ -5,6 +5,7 @@ mod system;
 mod lib;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use component::suggestion_row::{SuggestionRow, SuggestionRowData};
 use gtk4::gio::{self};
@@ -82,6 +83,7 @@ fn main() -> glib::ExitCode {
             let child = item.child().and_downcast::<SuggestionRow>().unwrap();
             child.set_data(&data);
         });
+        let selection_model = gtk::SingleSelection::new(Some(list_store.clone()));
 
         set_suggestion_list_store_rows(&list_store, vec![]);
         let multitool_clone = multitool.clone();
@@ -100,6 +102,30 @@ fn main() -> glib::ExitCode {
             glib::ControlFlow::Break
         });
 
+        let multitool_clone = multitool.clone();
+        let list_store_clone = list_store.clone();
+        let main_input_clone = main_input.clone();
+        let selection_model_clone = selection_model.clone();
+        glib::timeout_add_local(Duration::from_millis(100), move || {
+            dbg!("list update");
+            if (!multitool_clone.is_initialized()) {
+                return glib::ControlFlow::Continue
+            }
+
+            let updated_suggestions = multitool_clone.get_relevant_resolved_suggestion_rows(Some(main_input_clone.text().as_ref()));
+            let curr_item_count: usize = list_store_clone.n_items().try_into().unwrap();
+            if curr_item_count != updated_suggestions.len() {
+                dbg!("updating list with new results");
+                set_suggestion_list_store_rows(
+                    &list_store_clone, 
+                    updated_suggestions
+                );
+            }
+
+            glib::ControlFlow::Continue
+        });
+
+        let main_input_clone = main_input.clone();
         let selection_model = gtk::SingleSelection::new(Some(list_store));
         let list_view = gtk::ListView::new(Some(selection_model.clone()), Some(factory));
         let multitool_clone = multitool.clone();
@@ -110,7 +136,7 @@ fn main() -> glib::ExitCode {
                 .and_downcast::<SuggestionRowData>()
                 .expect("selected item should always be able to downcast to the type defined for its row");
             {
-                multitool_clone.activate(&row_data.provider(), &row_data.id());
+                multitool_clone.activate(main_input_clone.text().as_str(), &row_data.provider(), &row_data.id());
             }
 
         });
@@ -124,6 +150,7 @@ fn main() -> glib::ExitCode {
         let selection_model_clone = selection_model.clone();
         let multitool_clone = multitool.clone();
         let window_clone = window.clone();
+        let main_input_clone = main_input.clone();
         main_input.connect_activate(move |_| {
             dbg!("main_input.connect_activate");
             let selected = selection_model_clone.selected_item(); 
@@ -134,7 +161,7 @@ fn main() -> glib::ExitCode {
             let row_data = selected.and_downcast::<SuggestionRowData>()
                 .expect("selected item should always be able to downcast to the type defined for its row");
             {
-                let after = multitool_clone.activate(&row_data.provider(), &row_data.id());
+                let after = multitool_clone.activate(main_input_clone.text().as_str(), &row_data.provider(), &row_data.id());
                 if let PostActivationAction::Close = after {
                     window_clone.close();
                 }
