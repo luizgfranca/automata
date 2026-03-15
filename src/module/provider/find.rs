@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use evalexpr::Value;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -43,7 +42,6 @@ impl FSFinderProvider {
             &home_path.to_string()
         };
         if !Path::new(location).is_dir() {
-            // println!("location {} is no a directory, ignoring", location);
             return vec![];
         }
 
@@ -62,8 +60,6 @@ impl FSFinderProvider {
                         attributes: attrs(line),
                     })
                 } else {
-                    // dbg!("not_file");
-                    // dbg!(line);
                     None
                 }
             })
@@ -122,7 +118,6 @@ impl SuggestionProvider for FSFinderProvider {
         dbg!("started load_async_dynamic_suggestions", &input);
         let suggestions = self.get_finder_suggestions(&input);
         dbg!("loaded load_async_dynamic_suggestions", &input);
-        // dbg!(suggestions)
         suggestions
     }
 

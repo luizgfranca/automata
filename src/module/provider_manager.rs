@@ -1,6 +1,5 @@
 use std::{
     collections::{BTreeMap, HashMap},
-    hash::Hash,
     sync::Arc,
 };
 
@@ -21,7 +20,6 @@ use crate::module::{
 use super::suggestion_provider::SuggestionProvider;
 
 enum InputLoadingState {
-    Empty,
     Loading,
     Done,
 }
@@ -158,14 +156,7 @@ impl<'a> ProviderManager {
     fn try_get_async_input_load_ownership(&mut self, input_str: &str) -> bool {
         let mut load_state = self.input_load_state.blocking_lock();
         match load_state.get(input_str) {
-            Some(state) => match state {
-                InputLoadingState::Empty => {
-                    load_state.insert(input_str.to_string(), InputLoadingState::Loading);
-                    true
-                }
-                InputLoadingState::Loading => false,
-                InputLoadingState::Done => false,
-            },
+            Some(_) => false,
             None => {
                 load_state.insert(input_str.to_string(), InputLoadingState::Loading);
                 true
@@ -221,7 +212,7 @@ impl<'a> ProviderManager {
         if let Some(s) = input {
             let dynamic_suggestions = self.dynamic_suggestions.blocking_lock();
             let maybe_dynamic_items = dynamic_suggestions.get(s);
-            
+
             if let Some(dynamic_items) = maybe_dynamic_items {
                 let mut other = dynamic_items.clone();
                 result.append(&mut other);
