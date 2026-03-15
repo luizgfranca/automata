@@ -107,7 +107,6 @@ fn main() -> glib::ExitCode {
         let main_input_clone = main_input.clone();
         let selection_model_clone = selection_model.clone();
         glib::timeout_add_local(Duration::from_millis(100), move || {
-            dbg!("list update");
             if (!multitool_clone.is_initialized()) {
                 return glib::ControlFlow::Continue
             }

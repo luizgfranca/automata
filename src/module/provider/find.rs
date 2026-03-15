@@ -103,7 +103,19 @@ impl SuggestionProvider for FSFinderProvider {
     }
 
     fn activate(&self, item: &Suggestion) -> PostActivationAction {
-        todo!()
+        let path = &self.load_required_field(item, PATH_KEY);
+
+        let cmd = system::desktop::get_open_cmd(
+            &system::desktop::DefaultApplicationType::Mime(
+                system::desktop::try_get_file_mimetype(&path)
+                    .expect("expected all files to have a mimeType"),
+            ),
+            &path,
+        );
+
+        system::cmd::try_run(&cmd);
+
+        PostActivationAction::Close
     }
 
     async fn load_async_dynamic_suggestions(&self, input: String) -> Vec<Suggestion> {
