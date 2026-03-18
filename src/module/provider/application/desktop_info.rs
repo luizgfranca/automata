@@ -67,7 +67,7 @@ impl DesktopInfoLoader {
     pub fn cmd(s: &str) -> Vec<String> {
         s.split(" ")
             .filter(|it| !it.contains('%') && !it.contains('@'))
-            .map(|it| it.to_string())
+            .map(|it| it.replace("\\\"", "\"")) // '\"' becomes '"'
             .collect()
     }
 
