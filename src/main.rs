@@ -14,7 +14,7 @@ use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, glib};
 use gtk4::gdk::Key;
 use gtk4::glib::{spawn_async, spawn_future_local};
-use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, gdk};
+use gtk4::{self as gtk, EventControllerKey, ScrolledWindow, Settings, gdk};
 
 use crate::lib::math;
 use crate::module::suggestion_provider::PostActivationAction;
@@ -51,6 +51,12 @@ fn main() -> glib::ExitCode {
         .build();
 
     app.connect_activate(move |app| {
+        // accentuation character input may not work correctly on KDE Plasma 
+        // without this
+        if let Some(settings) = Settings::default() {
+            settings.set_property("gtk-im-module", &"gtk-im-context-simple");
+        }
+
         // avoid multiple instances
         if let Some(window) = app.active_window() {
             window.present();
