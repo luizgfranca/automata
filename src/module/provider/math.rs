@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use evalexpr::Value;
 
 use crate::module::suggestion_provider::PostActivationAction;
 use crate::module::{suggestion_provider::SuggestionProvider};
@@ -18,7 +17,7 @@ impl MathEvaluationProvider {
     }
 }
 
-fn attrs(value: Value) -> HashMap<String, String>{
+fn attrs(value: f64) -> HashMap<String, String>{
     let mut result: HashMap<String, String> = HashMap::new();
     result.insert(RESULT_EXP_KEY.to_string(), value.to_string());
     result
@@ -38,7 +37,7 @@ impl SuggestionProvider for MathEvaluationProvider {
     fn load_dynamic_suggestions(&self, input: Option<&str>) -> Vec<Suggestion> {
         match input {
             Some(exp) => {
-                match evalexpr::eval(exp) {
+                match meval::eval_str(exp) {
                     Ok(result) => {
                         vec![Suggestion {
                             id: "evaluation.calc".to_owned(),

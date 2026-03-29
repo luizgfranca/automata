@@ -1,4 +1,3 @@
-use evalexpr::Value;
 use std::collections::HashMap;
 
 use crate::module::suggestion::Suggestion;
